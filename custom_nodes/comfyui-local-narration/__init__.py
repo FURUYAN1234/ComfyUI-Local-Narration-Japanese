@@ -74,7 +74,7 @@ class NarrationDirection:
  FUNCTION='plan';CATEGORY='audio/Local Narration'
  def plan(self,text,purpose,mode,engine,voice_mode,speaker,style,speed,seed,reference_text,reference_audio=None,unique_id=None,character="自由指定",dialogue_blocks=""):
   blocks=[];target=''
-  if mode=='手動' and dialogue_blocks.strip():
+  if dialogue_blocks.strip():
    blocks,target=parse_blocks(dialogue_blocks)
    text='\n'.join(b['text'] for b in blocks if not target or b['id']==target)
   if mode not in MODES or engine not in ENGINES or voice_mode not in VOICES or speaker not in SPEAKERS:raise ValueError('設定の選択値が不正です。')

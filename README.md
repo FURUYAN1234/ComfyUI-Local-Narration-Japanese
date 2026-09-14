@@ -55,7 +55,7 @@ Enable the separate reference node and upload suitable reference speech to use i
 ## Use / 使い方
 
 1. Choose a control mode in the preset panel. / プリセット欄で「AIにおまかせ」「一部を指定してAIにおまかせ」「すべて手動」を選びます。
-2. Enter the script; manual mode uses the sentence editor. / 台詞を入力します。手動では文章入力の小窓を使います。
+2. Use the sentence editor in every mode, one sentence per field. / 全モードで台詞入力の小窓を使い、1枠に1文ずつ入力します。
 3. Choose purpose, character and tone presets. Text fields appear only for Custom. / 用途・声キャラクター・口調はプリセットで選び、「自由入力」を選ぶと文章欄が表示されます。
 4. Run, approve each sentence and reading, then generate. / 実行し、各文と読みを承認してから音声を生成します。
 
@@ -66,7 +66,7 @@ Character Custom opens the shared voice/tone instruction field. / 声キャラ�
 
 ### Consult and edit / 相談して修正
 
-In AI modes, press **Consult AI** to describe your wishes. The proposal appears in an editable dialog with model and speed controls. / AIモードの「おまかせ設定を相談・編集」で希望を伝えると、小窓に提案文とモデル・話速が表示され、修正できます。
+In AI modes, press the top **Consult AI** button to describe your wishes. The proposal appears in an editable dialog with model and speed controls. / AIモードの「おまかせ設定を相談・編集」で希望を伝えると、小窓に提案文とモデル・話速が表示され、修正できます。
 Press **Apply** to adopt the result as specified settings; the mode switches to partial control. Cancel leaves all original settings intact. / 「修正内容を採用」で指定設定として反映し、一部指定モードへ切り替わります。キャンセルでは元の設定を変えません。
 Custom purpose and voice/tone also offer consultation buttons to turn wishes into instruction text. / 用途・声質と口調の自由入力にも相談ボタンがあり、希望から指示文を作れます。
 Consultation uses the configured local LM Studio model and does not rewrite the script. / 相談は設定済みのローカルLM Studioを使い、読み上げ台詞を書き換えません。
@@ -77,9 +77,9 @@ AI proposals are optional: normal Run still supports automatic voice selection f
 The original script is preserved; the approved reading is sent to TTS. / 原稿は保持し、承認した読みをTTSへ渡します。
 Reference voice uses the separate ON/OFF node; Qwen reference mode does not apply voice/tone text. / 参照声は別のON/OFFノードを使います。Qwen参照モードでは声質・口調の文章指定は適用されません。
 
-## Manual sentence input / 手動の文章入力
+## Sentence input in every mode / 全モード共通の文章入力
 
-Choose **All manual**, then click **Manual dialogue +/−** on the direction node. / 「すべて手動」を選び、原稿ノード下部の「手動の台詞を追加・編集（＋／－）」を押します。
+Click **Script sentences** below the consultation button in the first node. / 最初のノードの相談ボタンの下にある「読み上げる台詞を1文ずつ入力・編集」を押します。
 Enter one original sentence per field, keeping kanji. Add/remove with +/−; Undo restores the last removal. / 漢字交じりの原文を1枠1文で入力し、＋／－で追加・削除します。直前の削除は取り消せます。
 Multiple sentences are split into separate fields before returning. / 複数文を入力した場合は、戻る前に1文ずつへ分けて確認できます。
 The input window only edits text; it does not generate, play or download audio. / この窓は原稿編集専用で、生成・再生・保存は行いません。
@@ -94,6 +94,13 @@ The three fields are script, AI purpose, and voice/tone. Purpose is inactive in 
 Reference voice is controlled by a separate ON/OFF node. OFF requires no audio file or placeholder. / 参照音声は別ノードのON/OFFで切り替えます。OFFでは音声ファイルや仮の無音ファイルは不要です。
 Enable it and upload speech only when using a reference; AI automatic mode ignores it. / 参照声を使うときだけONにして音声をアップロードします。AIおまかせでは参照を使いません。
 Irodori does not offer Qwen-only presets. Model-specific parameters are in Advanced settings, one model at a time. / IrodoriではQwen専用話者を選べません。モデル固有の値は詳細設定でモデルごとに表示します。
+
+## Many audio files / 音声が多い場合
+
+Audio bytes stay in the ComfyUI output directory; the workflow retains file references. / 音声の実体はComfyUIのoutputフォルダーへ保存され、ワークフローにはファイルの参照情報を保持します。
+The completed-audio node uses a fixed-height scrolling list for the full track and every sentence, with an MP3 download link for each. / 完成音声ノードは高さを固定したスクロール一覧に全体音声と全台詞を表示し、それぞれのMP3を保存できます。
+Only displayed audio players are created, and audio is loaded when played. / 表示中の再生欄だけを作り、音声は再生時に読み込みます。
+Saving the workflow does not embed or copy audio files. Keep the corresponding output folder when moving to another computer. / ワークフローの保存は音声の埋め込み・コピーを行いません。別PCへ移す場合は対応する出力フォルダーも保持してください。
 
 ## Pronunciation review / 読み確認
 

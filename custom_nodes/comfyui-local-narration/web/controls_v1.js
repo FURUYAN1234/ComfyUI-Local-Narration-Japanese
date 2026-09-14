@@ -20,7 +20,7 @@ function installPresets(node) {
   select.onchange=()=>{change(select.value);app.graph.setDirtyCanvas(true,true);sync();};
   box.append(select);panel.append(box);rows[name]={box,select};return select;
  }
- function set(name,value){const w=get(name);w.value=value;w.callback?.(value);}
+ function set(name,value){const w=get(name);w.value=value;w.callback?.(value);app.graph.setDirtyCanvas(true,true);}
  const mode=row('mode','Control / 設定方法',Object.keys(modes),v=>set('mode',modes[v]));
  const purpose=row('purpose','Purpose / 用途', [...Object.keys(purposes),'自由入力'],v=>{
   node.properties ||= {};node.properties.narrationPurposeCustom=v==='自由入力';
@@ -52,16 +52,16 @@ function installPresets(node) {
   const actions=document.createElement('div');Object.assign(actions.style,{display:'flex',justifyContent:'space-between',marginTop:'16px'});
   const cancel=document.createElement('button');cancel.textContent='Cancel / キャンセルして戻る';
   const apply=document.createElement('button');apply.textContent='Apply / 修正内容を採用';apply.disabled=true;actions.append(cancel);actions.append(apply);dialog.append(actions);
-  let alive=true,busy=false,timer;const initial={text:get('text').value,purpose:get('purpose').value,style:get('style').value,mode:get('mode').value};
+  let alive=true,busy=false,timer;const initial={script:scriptText(),text:get('text').value,purpose:get('purpose').value,style:get('style').value,mode:get('mode').value};
   const close=()=>{alive=false;clearInterval(timer);dialog.close();dialog.remove();};
   cancel.onclick=close;dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
   propose.onclick=async()=>{
    if(busy)return;if(!brief.value.trim()){status.textContent='希望・相談内容を入力してください。';return;}
    busy=true;propose.disabled=true;apply.disabled=true;const start=Date.now();
-   status.textContent='AIに相談中です。閉じても設定は変更されません。';
-   timer=setInterval(()=>{if(alive)status.textContent='AIに相談中 / 経過 '+Math.floor((Date.now()-start)/1000)+'秒。閉じた場合も計算終了後にGPUを解放します。';},1000);
+   status.textContent='AIに相談中です。';
+   timer=setInterval(()=>{if(alive)status.textContent='AIに相談中 / 経過 '+Math.floor((Date.now()-start)/1000)+'秒';},1000);
    try{
-    const response=await api.fetchApi('/local-narration/consult',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,text:initial.text,brief:brief.value,seed:get('seed').value})});
+    const response=await api.fetchApi('/local-narration/consult',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,text:initial.script,brief:brief.value,seed:get('seed').value})});
     const data=await response.json();if(!response.ok)throw Error(data.error||'相談に失敗しました。');
     if(!alive)return;
     result.value=kind==='plan'?data.style:data.text;result.parentElement.style.display='';
@@ -74,7 +74,7 @@ function installPresets(node) {
    if(!result.value.trim()){status.textContent='採用する文章を入力してください。';return;}
    if(kind==='plan'&&(!Number.isFinite(Number(speed.value))||Number(speed.value)<.5||Number(speed.value)>2)){status.textContent='話速は0.5〜2.0で指定してください。';return;}
    const affected=kind==='plan'?['text','purpose','style','mode']:[kind==='purpose'?'purpose':kind==='script'?'text':'style'];
-   if(affected.some(n=>get(n).value!==initial[n])){status.textContent='相談中に元の入力が変わりました。キャンセルして開き直してください。';return;}
+   if(affected.some(n=>get(n).value!==initial[n])||(kind==='plan'&&scriptText()!==initial.script)){status.textContent='相談中に元の入力が変わりました。キャンセルして開き直してください。';return;}
    node.properties ||= {};
    if(kind==='plan'){set('mode','AI提案＋手動上書き');set('engine',engine.value);set('character','自由指定');set('speed',Number(speed.value));set('style',result.value);node.properties.narrationToneCustom=true;}
    else {set(kind==='script'?'text':kind,result.value);if(kind==='purpose')node.properties.narrationPurposeCustom=true;if(kind==='style')node.properties.narrationToneCustom=true;}
@@ -88,7 +88,40 @@ function installPresets(node) {
  }
 
 
- let panelHeight=300,lastLayout='';
+
+ // One visible panel, original API widgets stay in their original serialized slots.
+ function scriptText(){try{const data=JSON.parse(get('dialogue_blocks')?.value||'');if(Array.isArray(data.blocks))return data.blocks.map(b=>b.text).join('\n');}catch{}return get('text').value;}
+ const scriptSection=document.createElement('section');
+ const scriptButton=document.createElement('button');scriptButton.textContent='Script sentences / 読み上げる台詞を1文ずつ入力・編集（＋／－）';
+ scriptButton.onclick=()=>node.narrationEditSentences?.();
+ const scriptPreview=document.createElement('div');Object.assign(scriptPreview.style,{whiteSpace:'pre-wrap',overflowY:'auto',maxHeight:'100px',padding:'8px',background:'#151515'});
+ scriptSection.append(scriptButton);scriptSection.append(scriptPreview);
+ function customSection(name,button,label){
+  const section=document.createElement('section');section.append(button);
+  const caption=document.createElement('label');caption.textContent=label;
+  const input=document.createElement('textarea');input.setAttribute('aria-label',label);
+  Object.assign(input.style,{display:'block',width:'100%',minHeight:'90px',boxSizing:'border-box',background:'#151515',color:'#fff',padding:'8px',resize:'vertical'});
+  input.oninput=()=>set(name,input.value);caption.append(input);section.append(caption);
+  return {section,input};
+ }
+ const purposeCustom=customSection('purpose',consultButtons.purpose,'Purpose instructions / 用途の指示');
+ const toneCustom=customSection('style',consultButtons.style,'Voice and tone instructions / 声質・口調の指示');
+ for(const name of ['engine','voice_mode','speaker']){
+  const original=get(name);row(name,labels[name],original.options?.values||[],v=>set(name,v));
+ }
+ function numberRow(name,label,min,max,step){
+  const box=document.createElement('label');box.textContent=label;
+  const input=document.createElement('input');input.type='number';input.min=min;input.max=max;input.step=step;input.setAttribute('aria-label',label);
+  Object.assign(input.style,{display:'block',width:'100%',height:'28px',boxSizing:'border-box',background:'#383838',color:'#fff'});
+  input.oninput=input.onchange=()=>{if(input.value!==''&&Number.isFinite(Number(input.value)))set(name,Number(input.value));};box.append(input);return {box,input};
+ }
+ const speedInput=numberRow('speed',labels.speed,0,2,.05),seedInput=numberRow('seed',labels.seed,0,2147483647,1);
+ const seedControl=get('control_after_generate');
+ if(seedControl)row('control_after_generate','After generation / 生成後の候補番号',seedControl.options?.values||['fixed','increment','decrement','randomize'],v=>set('control_after_generate',v));
+ panel.replaceChildren(consultButtons.plan,scriptSection,rows.mode.box,rows.purpose.box,purposeCustom.section,rows.engine.box,rows.voice_mode.box,rows.speaker.box,rows.character.box,rows.tone.box,toneCustom.section,speedInput.box,seedInput.box,...(seedControl?[rows.control_after_generate.box]:[]),hint);
+ for(const button of panel.querySelectorAll('button'))Object.assign(button.style,{width:'100%',padding:'7px',whiteSpace:'normal'});
+
+ let panelHeight=600,lastLayout='';
  const widget=node.addDOMWidget('narration_presets','div',panel,{serialize:false,hideOnZoom:false,getMinHeight:()=>panelHeight,getMaxHeight:()=>panelHeight,getHeight:()=>panelHeight});
  widget.options ||= {};widget.options.serialize=false;
  widget.computeSize=()=>[320,panelHeight];
@@ -105,14 +138,26 @@ function installPresets(node) {
   rows.character.box.style.display=auto?'none':'';
   rows.tone.box.style.display=auto?'none':'';
   character.disabled=!!get('character').disabled;tone.disabled=!!get('style').inputEl?.disabled;
-  hide(get('text'),manual);
-  hide(get('mode'),true);hide(get('character'),true);
-  hide(get('purpose'),manual||purpose.value!=='自由入力');
-  hide(get('style'),auto||tone.disabled||tone.value!=='自由入力');
-  consultButtons.plan.style.display=manual?"none":"";
-  consultButtons.purpose.style.display=!manual&&purpose.value==="自由入力"?"":"none";
-  consultButtons.style.style.display=!auto&&!tone.disabled&&tone.value==="自由入力"?"":"none";
-  panelHeight=18+Object.values(rows).filter(r=>r.box.style.display!=='none').length*54+60+Object.values(consultButtons).filter(b=>b.style.display!=='none').length*32;
+
+  for(const original of node.widgets)if(original!==widget)hide(original,true);
+  for(const name of ['engine','voice_mode','speaker']){
+   const original=get(name),control=rows[name];control.select.value=original.value;
+   control.select.disabled=!!original.disabled;control.box.style.display=auto?'none':'';
+   if(name==='voice_mode'||name==='speaker')control.box.style.display=auto||get('engine').value!=='Qwen'?'none':'';
+   if(name==='speaker'&&get('voice_mode').value!=='用意された声（Qwen）')control.box.style.display='none';
+  }
+  const script=scriptText();if(scriptPreview.textContent!==script)scriptPreview.textContent=script||'台詞を入力してください。';
+  if(document.activeElement!==purposeCustom.input)purposeCustom.input.value=get('purpose').value;
+  if(document.activeElement!==toneCustom.input)toneCustom.input.value=get('style').value;
+  purposeCustom.section.style.display=!manual&&purpose.value==='自由入力'?'':'none';
+  toneCustom.section.style.display=!auto&&!tone.disabled&&tone.value==='自由入力'?'':'none';
+  consultButtons.plan.style.display=manual?'none':'';
+  consultButtons.purpose.style.display=consultButtons.style.style.display='';
+  speedInput.box.style.display=auto?'none':'';
+  if(document.activeElement!==speedInput.input)speedInput.input.value=get('speed').value;
+  if(document.activeElement!==seedInput.input)seedInput.input.value=get('seed').value;
+  if(seedControl)rows.control_after_generate.select.value=seedControl.value;
+  panelHeight=auto?500:640;
   const layout=[manual,auto,purpose.value,tone.value,tone.disabled,panelHeight].join('|');
   if(lastLayout!==layout){lastLayout=layout;queueMicrotask(()=>{if(node.computeSize&&node.setSize)node.setSize([Math.max(node.size[0],460),node.computeSize()[1]]);});}
   hint.textContent=auto?'台詞と用途から、モデル・声・口調・話速をAIが選びます。':manual?'モデル・声・口調を指定します。「標準」は自然な読み方です。':'指定した項目を優先し、それ以外はAIが選びます。相談ボタンで提案文を確認・修正できます。';

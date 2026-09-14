@@ -4,7 +4,7 @@ const editors=new Map();
 function sentences(text){return (text.match(/[^。！？\n]+[。！？]?|[。！？]/g)||[]).map(s=>s.trim()).filter(Boolean);}
 function normalize(data){return {blocks:data.blocks.flatMap(b=>{const lines=sentences(b.text);return (lines.length?lines:['']).map((text,i)=>({id:i?crypto.randomUUID():b.id,text}));}),target:''};}
 function state(node){const w=node.widgets.find(w=>w.name==='dialogue_blocks');try{const d=JSON.parse(w.value);if(Array.isArray(d.blocks))return d;}catch{}return {blocks:[{id:crypto.randomUUID(),text:node.widgets.find(w=>w.name==='text')?.value||''}],target:''};}
-function save(node,d){node.widgets.find(w=>w.name==='dialogue_blocks').value=JSON.stringify(d);app.graph.setDirtyCanvas(true,true);}
+function save(node,d){node.widgets.find(w=>w.name==='text').value=d.blocks.map(b=>b.text).join('\n');node.widgets.find(w=>w.name==='dialogue_blocks').value=JSON.stringify(d);app.graph.setDirtyCanvas(true,true);}
 function show(node){
  if(editors.has(node.id)){editors.get(node.id).dialog.focus();return;}
  let data=normalize(state(node)),deleted=null;data.target='';
@@ -35,8 +35,8 @@ function show(node){
 app.registerExtension({name:'LocalNarration.DialogueBlocks',nodeCreated(node){
  if(node.comfyClass!=='LocalNarrationDirection')return;
  const w=node.widgets.find(w=>w.name==='dialogue_blocks');if(!w)return;w.hidden=true;w.computeSize=()=>[0,-4];if(w.inputEl)w.inputEl.style.display='none';
- const b=node.addWidget('button','Manual dialogue +/− / 手動の台詞を追加・編集（＋／－）',null,()=>show(node),{serialize:false});
- const update=()=>{const manual=node.widgets.find(w=>w.name==='mode')?.value==='手動';b.disabled=!manual;const script=node.widgets.find(w=>w.name==='text');const active=manual&&!!w.value;script.disabled=false;if(script.inputEl){script.inputEl.disabled=active;script.inputEl.style.opacity=active?'.45':'1';}};
- const draw=node.onDrawForeground;node.onDrawForeground=function(){update();return draw?.apply(this,arguments);};queueMicrotask(update);
+ node.narrationEditSentences=()=>show(node);
+ // Kept as a hidden compatibility entry point for workflows/extensions.
+ const b=node.addWidget('button','Script sentences / 台詞を1文ずつ入力・編集（＋／－）',null,()=>show(node),{serialize:false});
+ b.hidden=true;b.computeSize=()=>[0,-4];
  }});
-
