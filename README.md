@@ -138,3 +138,7 @@ The initial environment setup was checked with existing compatible environments;
 ## Version / バージョン
 
 v1.0.0: unified TTS selection, AI/manual control, character menu, reading review and model download. / TTS切替・AI/手動・声キャラメニュー・読み確認・モデル取得を統合。
+Manual input and notifications / 手動入力と通知
+
+Manual dialogue uses the sentence dialog only; Cancel discards edits and Save commits them. / 手動の台詞入力は文ごとの小窓に一本化。キャンセルで編集を破棄し、保存で確定します。
+Progress, elapsed seconds and completion appear at the top of the screen. / 画面上部に進行状況・経過秒数・完了通知を表示します。

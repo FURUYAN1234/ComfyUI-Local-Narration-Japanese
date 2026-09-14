@@ -7,7 +7,7 @@ function state(node){const w=node.widgets.find(w=>w.name==='dialogue_blocks');tr
 function save(node,d){node.widgets.find(w=>w.name==='dialogue_blocks').value=JSON.stringify(d);app.graph.setDirtyCanvas(true,true);}
 function show(node){
  if(editors.has(node.id)){editors.get(node.id).dialog.focus();return;}
- let data=normalize(state(node)),deleted=null;data.target='';save(node,data);
+ let data=normalize(state(node)),deleted=null;data.target='';
  const dialog=document.createElement('dialog');Object.assign(dialog.style,{width:'min(850px,90vw)',height:'min(650px,85vh)',boxSizing:'border-box',padding:'14px',background:'#20242c',color:'white',border:'1px solid #64748b',borderRadius:'12px',zIndex:9999});
  const add=(tag,text,parent=dialog)=>{const e=document.createElement(tag);e.textContent=text||'';parent.append(e);return e;};
  const heading=add('h2','Script sentences / 漢字交じりの原稿を1文ずつ入力');Object.assign(heading.style,{fontSize:'18px',margin:'0 0 6px'});
@@ -20,14 +20,16 @@ function show(node){
  function render(){list.replaceChildren();data.blocks.forEach((b,i)=>{
   const section=add('section','',list);Object.assign(section.style,{padding:'12px',marginBottom:'12px',background:'#111827',borderRadius:'8px'});
   const header=add('div','',section);header.style.display='flex';header.style.justifyContent='space-between';add('strong',String(i+1).padStart(3,'0')+' / 台詞',header);
-  const minus=button('− 削除 / Remove',()=>{deleted={block:b,index:i};data.blocks.splice(i,1);save(node,data);render();},header);minus.disabled=data.blocks.length<=1;
+  const minus=button('− 削除 / Remove',()=>{deleted={block:b,index:i};data.blocks.splice(i,1);render();},header);minus.disabled=data.blocks.length<=1;
   const text=add('textarea','',section);text.value=b.text;text.setAttribute('aria-label','台詞ブロック'+(i+1));Object.assign(text.style,{width:'100%',boxSizing:'border-box',minHeight:'85px',fontSize:'16px',margin:'10px 0'});
-  text.oninput=()=>{b.text=text.value;data.target='';save(node,data);};
+  text.oninput=()=>{b.text=text.value;data.target='';};
  });undo.disabled=!deleted;}
- button('＋ 台詞を追加 / Add',()=>{if(data.blocks.length>=100){status.textContent='最大100ブロックです。';return;}data.blocks.push({id:crypto.randomUUID(),text:''});save(node,data);render();list.lastElementChild.querySelector('textarea').focus();list.lastElementChild.scrollIntoView({block:'nearest'});},footer);
- const undo=button('削除を戻す / Undo remove',()=>{if(!deleted)return;data.blocks.splice(deleted.index,0,deleted.block);deleted=null;save(node,data);render();},footer);
- button('Save and return / 入力を保存して戻る',()=>{if(data.blocks.some(b=>!b.text.trim())){status.textContent='空欄へ台詞を入力するか、－で削除してください。';return;}const normalized=normalize(data);if(normalized.blocks.length>100){status.textContent='最大100文です。';return;}if(normalized.blocks.length!==data.blocks.length){data=normalized;save(node,data);render();status.textContent='複数の文を1文ずつに分けました。内容を確認して、もう一度「戻る」を押してください。';return;}save(node,data);dialog.close();dialog.remove();editors.delete(node.id);},footer);
- dialog.addEventListener('cancel',()=>{dialog.remove();editors.delete(node.id);});
+ button('＋ 台詞を追加 / Add',()=>{if(data.blocks.length>=100){status.textContent='最大100ブロックです。';return;}data.blocks.push({id:crypto.randomUUID(),text:''});render();list.lastElementChild.querySelector('textarea').focus();list.lastElementChild.scrollIntoView({block:'nearest'});},footer);
+ const undo=button('削除を戻す / Undo remove',()=>{if(!deleted)return;data.blocks.splice(deleted.index,0,deleted.block);deleted=null;render();},footer);
+ const close=()=>{dialog.close();dialog.remove();editors.delete(node.id);};
+ button('Cancel and return / 変更を破棄して戻る',close,footer);
+ button('Save and return / 入力を保存して戻る',()=>{if(data.blocks.some(b=>!b.text.trim())){status.textContent='空欄へ台詞を入力するか、－で削除してください。';return;}const normalized=normalize(data);if(normalized.blocks.length>100){status.textContent='最大100文です。';return;}if(normalized.blocks.length!==data.blocks.length){data=normalized;render();status.textContent='複数の文を1文ずつに分けました。内容を確認して、もう一度「戻る」を押してください。';return;}save(node,data);close();},footer);
+ dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  editors.set(node.id,{dialog,render,status});document.body.append(dialog);dialog.showModal();Object.assign(dialog.style,{display:'flex',flexDirection:'column'});render();
 }
 app.registerExtension({name:'LocalNarration.DialogueBlocks',nodeCreated(node){
