@@ -16,7 +16,7 @@ api.addEventListener('local_narration.consult_status',({detail:d})=>{
  consulting=false;finish(d.text,d.state==='error'?'error':'complete');
  if(d.state==='cancel')document.body.append(panel);
 });
-api.addEventListener('local_narration.status',({detail:d})=>{if(consulting||!d||!app.graph?.getNodeById(d.node))return;if(d.state==='error'){finish('⚠️ '+d.text,'error');return;}running(d.text);});
+api.addEventListener('local_narration.status',({detail:d})=>{if(consulting||!d||!app.graph?.getNodeById(d.node))return;if(d.state==='error'){finish('⚠️ '+d.text,'error');return;}if(d.terminal){finish('✅ '+d.text);return;}if(d.state==='running'||active)running(d.text);});
 api.addEventListener('executed',({detail:d})=>{const a=d?.output?.completed_audio?.[0];if(consulting||!a)return;finish('✅ 音声生成完了 / Narration complete\n最後の再生・保存ノードで全体・台詞別に再生できます。');});
 api.addEventListener('execution_success',()=>{if(active&&!consulting)finish('✅ 処理完了 / Completed');});
 for(const [event,text] of [['execution_error','処理に失敗しました。実行エラーを確認してください / Failed'],['execution_interrupted','処理を中止しました / Cancelled'],['reconnecting','接続が切れました。処理状態は未確認です / Disconnected; status unknown']])api.addEventListener(event,()=>{if(active&&!consulting)finish('⚠️ '+text,'error');});

@@ -16,8 +16,8 @@ ENGINES=['おまかせ','Irodori','Qwen']
 VOICES=['デザイン','用意された声（Qwen）']
 CHARACTERS={'自由指定':'','落ち着いた女性ナレーター':'落ち着いた成人女性。聞き取りやすい標準語で丁寧な解説。','明るい女性ナレーター':'明るく親しみやすい成人女性。自然で軽快な案内。','落ち着いた男性ナレーター':'落ち着いた成人男性。低めの声で丁寧な説明。','元気な男性ナレーター':'元気で親しみやすい成人男性。軽快な口調。','やさしい物語の語り手':'柔らかい成人の声。穏やかなテンポで物語を語る。','元気なアニメキャラクター':'表情豊かで元気な若い成人女性のキャラクター声。','クールなアニメキャラクター':'若い成人男性の落ち着いたキャラクター声。控えめでクールな口調。','落ち着いたニュース調':'成人の中性的な声。明瞭で抑揚を抑えたニュース調。'}
 SPEAKERS=['Ono_anna','Aiden','Dylan','Eric','Ryan','Serena','Sohee','Uncle_fu','Vivian']
-def notify(node,state,text):
- PromptServer.instance.send_sync('local_narration.status',{'node':str(node),'state':state,'text':text})
+def notify(node,state,text,terminal=False):
+ PromptServer.instance.send_sync('local_narration.status',{'node':str(node),'state':state,'text':text,'terminal':terminal})
 _planner_lock=threading.Lock()
 def load_planner():
  spec=importlib.util.spec_from_file_location('local_narration_planner',ROOT/'planner.py')
@@ -132,11 +132,16 @@ class NarrationGenerate:
  @classmethod
  def IS_CHANGED(cls,**kwargs):return float("nan")
  def generate(self,plan,unique_id=None,review_readings=True,**options):
-  # Public execution always requires approval; old workflow booleans cannot bypass it.
-  if plan.get('dialogue_blocks'):return self.generate_blocks(plan,unique_id,True,options)
-  notify(unique_id,'running','台詞と読みの確認待ち / Review readings')
-  approved=review(dict(plan),unique_id)
-  return self._generate_audio(approved,unique_id=unique_id,review_readings=False,**options)
+  # Public execution always requires approval; all clients receive failures including review cancellation.
+  try:
+   if plan.get('dialogue_blocks'):return self.generate_blocks(plan,unique_id,True,options)
+   notify(unique_id,'running','台詞と読みの確認待ち / Review readings')
+   approved=review(dict(plan),unique_id)
+   return self._generate_audio(approved,unique_id=unique_id,review_readings=False,**options)
+  except Exception:
+   notify(unique_id,'error','音声生成を終了しました。中止またはエラーを確認してください / Stopped',terminal=True)
+   raise
+
  def _generate_audio(self,*args,**kwargs):
   if not _planner_lock.acquire(blocking=False):raise RuntimeError('AIへの相談が実行中です。完了後に音声生成を実行してください。')
   try:return self._generate_audio_locked(*args,**kwargs)
@@ -215,13 +220,20 @@ class NarrationGenerate:
 
 class NarrationPlayback:
  @classmethod
- def INPUT_TYPES(cls):return {'required':{'audio':('AUDIO',),'details':('STRING',{'forceInput':True})}}
+ def INPUT_TYPES(cls):return {'required':{'audio':('AUDIO',),'details':('STRING',{'forceInput':True})},'hidden':{'unique_id':'UNIQUE_ID'}}
  RETURN_TYPES=();FUNCTION='save';OUTPUT_NODE=True;CATEGORY='audio/Local Narration'
- def save(self,audio,details):
+ def save(self,audio,details,unique_id=None):
+  notify(unique_id,'running','全体音声を保存中 / Saving audio')
+  try:return self._save(audio,details,unique_id)
+  except Exception:
+   notify(unique_id,'error','音声保存に失敗しました / Audio save failed',terminal=True)
+   raise
+ def _save(self,audio,details,unique_id):
   report=json.loads(details);out=Path(folder_paths.get_output_directory())/'audio/LocalNarration/MP3'
   out.mkdir(parents=True,exist_ok=True);base=datetime.now().strftime('%Y%m%d%H%M%S')+'_'+uuid.uuid4().hex[:6]
   wav=out/(base+'.wav');mp3=out/(base+'.mp3');sf.write(wav,audio['waveform'][0].detach().cpu().numpy().T,audio['sample_rate'])
   subprocess.run(['ffmpeg','-v','error','-nostdin','-i',str(wav),'-codec:a','libmp3lame','-b:a','192k',str(mp3)],check=True,timeout=120)
+  notify(unique_id,'complete','音声生成・保存完了 / Narration saved',terminal=True)
   return {'ui':{'completed_audio':[{'filename':mp3.name,'subfolder':'audio/LocalNarration/MP3','type':'output','text':'Full narration / 全体音声'}],'dialogue_blocks':report.get('blocks',[])}}
 
 NODE_CLASS_MAPPINGS={'LocalNarrationPlayback':NarrationPlayback,'LocalNarrationReference':NarrationReference,'LocalNarrationDirection':NarrationDirection,'LocalNarrationGenerate':NarrationGenerate}
@@ -246,7 +258,7 @@ async def download_models(request):
    if message.startswith(('Download','Ready','All models')):notify(node,'running',message)
   code=await child.wait()
   if code:notify(node,'error','モデル取得失敗 / Retry');return web.json_response({'error':'\n'.join(lines[-15:])},status=500)
-  notify(node,'complete','モデル取得完了 / Models ready');return web.json_response({'ok':True})
+  notify(node,'complete','モデル取得完了 / Models ready',terminal=True);return web.json_response({'ok':True})
 
 @PromptServer.instance.routes.post('/local-narration/consult')
 async def consult(request):

@@ -1,0 +1,13 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+let now=0,next=0,intervals=new Map(),handlers={},panel;
+const ctx={app:{graph:{getNodeById:()=>({})}},api:{addEventListener:(k,f)=>handlers[k]=f,queuePrompt:async()=>({})},document:{createElement:()=>({style:{},dataset:{},setAttribute(){}}),body:{append:e=>panel=e}},Date:{now:()=>now},setInterval:f=>{const id=++next;intervals.set(id,f);return id;},clearInterval:id=>intervals.delete(id),setTimeout:()=>++next,clearTimeout(){}};
+vm.runInNewContext(fs.readFileSync(process.argv[2],'utf8').replace(/^import .*;\n/gm,''),ctx);
+const emit=d=>handlers['local_narration.status']({detail:{node:3,...d}}),tick=()=>{now+=1000;for(const f of [...intervals.values()])f();};
+emit({state:'running',text:'生成中'});tick();assert(panel.textContent.includes('1秒'));
+emit({state:'complete',text:'1文生成完了'});tick();assert.equal(panel.dataset.state,'running');
+emit({state:'complete',terminal:true,text:'音声保存完了'});assert.equal(intervals.size,0);const final=panel.textContent;
+tick();tick();assert.equal(panel.textContent,final);assert.equal(panel.dataset.state,'complete');
+emit({state:'complete',text:'遅れた中間通知'});tick();assert.equal(panel.textContent,final,'late intermediate completion cannot restart timer');
+emit({state:'running',text:'次の生成'});assert.equal(intervals.size,1);emit({state:'error',terminal:true,text:'中止'});assert.equal(intervals.size,0);
+emit({state:'running',text:'再接続前'});handlers.reconnecting();assert.equal(intervals.size,0);
+console.log('PASS observer tab: intermediate completion continues; broadcast terminal stops timer without executed/execution_success; late intermediate ignored; error/disconnect stop');
