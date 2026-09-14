@@ -1,4 +1,4 @@
-import importlib.util,json,subprocess,time,uuid
+import importlib.util,json,subprocess,time,uuid,re
 from pathlib import Path
 from datetime import datetime
 import numpy as np
@@ -22,6 +22,26 @@ def load_planner():
  spec=importlib.util.spec_from_file_location('local_narration_planner',ROOT/'planner.py')
  module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 
+def parse_blocks(raw):
+ try:data=json.loads(raw)
+ except (ValueError,TypeError):raise ValueError('台詞ブロックの保存データが不正です。')
+ blocks=data.get('blocks') if isinstance(data,dict) else None
+ if not isinstance(blocks,list) or not 1<=len(blocks)<=100:raise ValueError('台詞ブロックは1〜100個です。')
+ target=data.get('target','')
+ ids=set()
+ for b in blocks:
+  if not isinstance(b,dict) or not isinstance(b.get('id'),str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}',b['id']) or b['id'] in ids:raise ValueError('台詞ブロックのIDが不正です。')
+  ids.add(b['id'])
+  if not isinstance(b.get('text'),str) or len(b['text'])>10000 or ((not target or b['id']==target) and not b['text'].strip()):raise ValueError('空の台詞を入力するか、不要なブロックを削除してください（1万文字以内）。')
+ target=data.get('target','')
+ if not isinstance(target,str) or target and target not in ids:raise ValueError('生成対象のブロックが見つかりません。')
+ return blocks,target
+
+def block_filename(index,text):
+ title=re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', text)
+ title=re.sub(r'\s+',' ',title).strip(' .')[:40].rstrip(' .') or '台詞'
+ return f'{index:03d}_{title}.mp3'
+
 class NarrationDirection:
  @classmethod
  def INPUT_TYPES(cls):
@@ -37,11 +57,15 @@ class NarrationDirection:
    'seed':('INT',{'default':42,'min':0,'max':2147483647}),
    'character':(list(CHARACTERS),{'default':'自由指定'}),
    'reference_text':('STRING',{'multiline':True,'default':'','tooltip':'参照音声で話している原稿。Qwenでは入力推奨。'}),
-  },'optional':{'reference_audio':('AUDIO',)},'hidden':{'unique_id':'UNIQUE_ID'}}
+  },'optional':{'reference_audio':('AUDIO',),'dialogue_blocks':('STRING',{'default':'','multiline':False})},'hidden':{'unique_id':'UNIQUE_ID'}}
  RETURN_TYPES=('NARRATION_PLAN','STRING')
  RETURN_NAMES=('Voice plan / 音声企画','Chosen settings / 選定内容')
  FUNCTION='plan';CATEGORY='audio/Local Narration'
- def plan(self,text,purpose,mode,engine,voice_mode,speaker,style,speed,seed,reference_text,reference_audio=None,unique_id=None,character="自由指定"):
+ def plan(self,text,purpose,mode,engine,voice_mode,speaker,style,speed,seed,reference_text,reference_audio=None,unique_id=None,character="自由指定",dialogue_blocks=""):
+  blocks=[];target=''
+  if mode=='手動' and dialogue_blocks.strip():
+   blocks,target=parse_blocks(dialogue_blocks)
+   text='\n'.join(b['text'] for b in blocks if not target or b['id']==target)
   if mode not in MODES or engine not in ENGINES or voice_mode not in VOICES or speaker not in SPEAKERS:raise ValueError('設定の選択値が不正です。')
   if character not in CHARACTERS:raise ValueError('声キャラの選択値が不正です。')
   if mode!='AIおまかせ' and CHARACTERS[character]:style=CHARACTERS[character]+(' 追加指定：'+style.strip() if style.strip() else '')
@@ -61,6 +85,7 @@ class NarrationDirection:
    if chosen=='preset' and p['engine']!='Qwen':raise ValueError('用意された話者はQwen専用です。Qwenを選ぶかデザインを使用してください。')
    if chosen=='reference' and reference_audio is None:raise ValueError('参照音声モードでは音声を接続してください。')
    p.update(text=text,voice_mode=chosen,speaker=speaker,reference_text=reference_text,selection_mode=mode,character="AI選定："+p["style"] if mode=="AIおまかせ" else character)
+   if blocks:p.update(dialogue_blocks=blocks,block_target=target,direction_id=str(unique_id))
    shown=json.dumps(p,ensure_ascii=False,indent=2)
    if chosen=='reference':p['_reference_audio']=reference_audio
    notify(unique_id,'complete','音声企画完了 / '+p['engine'])
@@ -93,6 +118,7 @@ class NarrationGenerate:
  @classmethod
  def IS_CHANGED(cls,**kwargs):return float("nan")
  def generate(self,plan,unique_id=None,review_readings=True,**options):
+  if plan.get('dialogue_blocks'):return self.generate_blocks(plan,unique_id,review_readings,options)
   p=dict(plan);reference=p.pop('_reference_audio',None)
   if review_readings:
    notify(unique_id,'running','台詞と読みの確認待ち / Review readings')
@@ -129,6 +155,39 @@ class NarrationGenerate:
     try:proc.wait(timeout=10)
     except subprocess.TimeoutExpired:proc.kill();proc.wait()
    notify(unique_id,'error','音声生成停止 / 保存先のログを確認');raise
+
+ def generate_blocks(self,plan,node,review_readings,options):
+  from .reading_review import split_rows
+  all_blocks=plan['dialogue_blocks']; selected=[(i+1,b) for i,b in enumerate(all_blocks) if not plan.get('block_target') or b['id']==plan['block_target']]
+  p=dict(plan);p.pop('dialogue_blocks');p.pop('block_target',None)
+  counts=[len(split_rows(b['text'])) for _,b in selected]
+  if review_readings:
+   p=review(p,node)
+   lines=p['reading_review']['readings']
+  else:lines=[]
+  batch=Path(folder_paths.get_output_directory())/'audio/LocalNarration/Blocks'/(datetime.now().strftime('%Y%m%d%H%M%S')+'_'+uuid.uuid4().hex[:6])
+  batch.mkdir(parents=True,exist_ok=False)
+  outputs=[];audios=[];cursor=0
+  for (index,b),count in zip(selected,counts):
+   mm.throw_exception_if_processing_interrupted()
+   part=dict(p);part['text']='\n'.join(lines[cursor:cursor+count]) if review_readings else b['text'];cursor+=count
+   part['original_text']=b['text'];part.pop('reading_review',None)
+   if review_readings:part['reading_review']={'rows':split_rows(b['text']),'readings':part['text'].split('\n')}
+   audio,report=self.generate(part,unique_id=node,review_readings=False,**options)
+   audios.append(audio);name=block_filename(index,b['text']);dest=batch/name
+   wav=batch/(dest.stem+'.wav');sf.write(wav,audio['waveform'][0].numpy().T,audio['sample_rate'])
+   subprocess.run(['ffmpeg','-v','error','-nostdin','-i',str(wav),'-codec:a','libmp3lame','-b:a','192k',str(dest)],check=True,timeout=120)
+   item={'id':b['id'],'index':index,'text':b['text'],'filename':name,'subfolder':str(batch.relative_to(folder_paths.get_output_directory())),'type':'output','seconds':audio['waveform'].shape[-1]/audio['sample_rate'],'direction_id':plan['direction_id']}
+   outputs.append(item)
+   (batch/'blocks.json').write_text(json.dumps(outputs,ensure_ascii=False,indent=2))
+   PromptServer.instance.send_sync('local_narration.block_complete',item)
+  sr=audios[0]['sample_rate'];chunks=[]
+  for a in audios:
+   if a['sample_rate']!=sr:raise ValueError('Block sample rates do not match')
+   if chunks:chunks.append(torch.zeros((1,a['waveform'].shape[1],round(sr*options.get('pause_ms',250)/1000))))
+   chunks.append(a['waveform'])
+  notify(node,'complete',str(len(outputs))+' blocks complete / 台詞の音声生成完了')
+  return {'ui':{'dialogue_blocks':outputs},'result':({'waveform':torch.cat(chunks,dim=-1),'sample_rate':sr},json.dumps({'blocks':outputs,'folder':str(batch)},ensure_ascii=False,indent=2))}
 
 NODE_CLASS_MAPPINGS={'LocalNarrationDirection':NarrationDirection,'LocalNarrationGenerate':NarrationGenerate}
 NODE_DISPLAY_NAME_MAPPINGS={'LocalNarrationDirection':'Voice direction / 日本語おまかせ・手動設定','LocalNarrationGenerate':'Generate speech / 音声生成・詳細設定'}

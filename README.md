@@ -67,6 +67,21 @@ Reference mode uses recorded speech; Qwen Base does not apply style instructions
 AI + override prioritizes a specified TTS, character/style and nonzero speed. / AI＋上書きでは、指定TTS・声キャラや口調・0以外の話速を優先します。
 The original script is preserved; the confirmed reading is sent to TTS. / 原稿は保持し、確認した読みをTTSへ渡します。
 
+## Dialogue blocks (manual) / 台詞ブロック（手動）
+
+Choose Manual and click Dialogue blocks on the direction node. / 手動を選び、原稿ノードの「台詞ブロックを編集」を押します。
+Use + to append a block, - to remove it, and Undo remove to restore the last removed block. / ＋で末尾に追加、－で削除、削除を戻すで直前の削除を取り消します。
+At least one block is retained; enter text in empty blocks before generation. / 最低1ブロックを残します。生成前に空の台詞を入力してください。
+Each block can contain multiple sentences; selected blocks still pass through pronunciation review. / 1ブロックに複数の文を入れられ、生成対象の台詞は読み確認を通ります。
+Generate one block or all blocks; each has its own audio player and MP3 download. / 台詞単位または全台詞を生成でき、各ブロックで再生・MP3保存できます。
+Voice and detailed settings are shared across blocks. / 声と詳細設定は全ブロック共通です。
+Names use a three-digit index plus the first 40 characters of the original text, with unsafe filename characters replaced. / 名前は3桁の通し番号＋元の台詞の先頭40文字とし、ファイル名に使えない文字は置換します。
+Example: `001_こんにちは。.mp3`; each run has a unique output directory, preserving previous audio. / 例：`001_こんにちは。.mp3`。実行ごとに別フォルダーへ保存し、以前の音声を残します。
+Outputs are under `output/audio/LocalNarration/Blocks/`; `blocks.json` is the result record, not a workflow. / 左記の配下へ保存し、blocks.jsonは結果記録で、ワークフローではありません。
+Editing text marks the player as previous-text audio until regenerated. / 台詞編集後は、再生成するまで変更前の音声であることを表示します。
+Block text and playback links are saved with the workflow; save the workflow before closing the browser. / 台詞と再生リンクはワークフローに保存されます。ブラウザーを閉じる前にワークフローを保存してください。
+AI modes keep using the original script field; manual blocks are retained but not used. / AIモードでは通常の原稿欄を使い、手動ブロックは保持されますが使用しません。
+
 ## Pronunciation review / 読み確認
 
 ![Reading review / 読み確認](images/reading-review.png)

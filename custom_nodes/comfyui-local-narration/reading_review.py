@@ -17,8 +17,10 @@ def save_memory(data):
   os.replace(path,MEMORY)
  finally:
   if os.path.exists(path):os.unlink(path)
+def split_rows(text):
+ return [x.strip() for x in re.findall(r'[^。！？\n]+[。！？]?|[。！？]',text) if x.strip()]
 def review(plan,node):
- rows=[x.strip() for x in re.findall(r'[^。！？\n]+[。！？]?|[。！？]',plan['text']) if x.strip()]
+ rows=split_rows(plan['text'])
  memory=load_memory()
  raw=subprocess.run([json.loads((ROOT/'config.json').read_text())['python']['Irodori'],str(ROOT/'readings_helper.py')],input=json.dumps(rows,ensure_ascii=False),text=True,capture_output=True,timeout=30)
  if raw.returncode:raise RuntimeError('読み変換に失敗: '+raw.stderr[-500:])
