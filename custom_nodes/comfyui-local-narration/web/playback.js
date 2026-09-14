@@ -6,8 +6,8 @@ app.registerExtension({name:'LocalNarration.FinalPlayback',nodeCreated(node){if(
   root.replaceChildren();
   if(!data){root.textContent='After generation: full audio and sentence downloads / 生成後に全体音声と台詞別の再生・保存を表示';return;}
   const add=(tag,text,parent=root)=>{const e=document.createElement(tag);e.textContent=text||'';parent.append(e);return e;};
-  add('strong','✅ Completed / 音声生成完了');
-  add('p','Audio files are saved automatically. / 音声ファイルは自動保存済みです。下の保存ボタンでダウンロードできます。');
+  add('strong','Saved audio / 保存済み音声');
+  add('p','Files are saved on disk; this list updates after generation completes. / 音声は保存済みです。再生成が完了すると一覧が更新されます。');
   const blocks=data.dialogue_blocks||[];
   add('p','Sentences / 台詞 '+blocks.length+'件 · Scroll to browse / スクロールして一覧を確認');
   const items=[...(data.completed_audio||[]),...blocks];

@@ -2,9 +2,10 @@ import {app} from "../../scripts/app.js";
 import {api} from "../../scripts/api.js";
 const editors=new Map();
 function sentences(text){return (text.match(/[^。！？\n]+[。！？]?|[。！？]/g)||[]).map(s=>s.trim()).filter(Boolean);}
+export function scriptBlocks(text){return sentences(text).map(text=>({id:crypto.randomUUID(),text}));}
 function normalize(data){return {blocks:data.blocks.flatMap(b=>{const lines=sentences(b.text);return (lines.length?lines:['']).map((text,i)=>({id:i?crypto.randomUUID():b.id,text}));}),target:''};}
 function state(node){const w=node.widgets.find(w=>w.name==='dialogue_blocks');try{const d=JSON.parse(w.value);if(Array.isArray(d.blocks))return d;}catch{}return {blocks:[{id:crypto.randomUUID(),text:node.widgets.find(w=>w.name==='text')?.value||''}],target:''};}
-function save(node,d){node.widgets.find(w=>w.name==='text').value=d.blocks.map(b=>b.text).join('\n');node.widgets.find(w=>w.name==='dialogue_blocks').value=JSON.stringify(d);app.graph.setDirtyCanvas(true,true);}
+export function saveScript(node,d){node.widgets.find(w=>w.name==='text').value=d.blocks.map(b=>b.text).join('\n');node.widgets.find(w=>w.name==='dialogue_blocks').value=JSON.stringify(d);app.graph.setDirtyCanvas(true,true);}
 function show(node){
  if(editors.has(node.id)){editors.get(node.id).dialog.focus();return;}
  let data=normalize(state(node)),deleted=null;data.target='';
@@ -28,7 +29,7 @@ function show(node){
  const undo=button('削除を戻す / Undo remove',()=>{if(!deleted)return;data.blocks.splice(deleted.index,0,deleted.block);deleted=null;render();},footer);
  const close=()=>{dialog.close();dialog.remove();editors.delete(node.id);};
  button('Cancel and return / 変更を破棄して戻る',close,footer);
- button('Save and return / 入力を保存して戻る',()=>{if(data.blocks.some(b=>!b.text.trim())){status.textContent='空欄へ台詞を入力するか、－で削除してください。';return;}const normalized=normalize(data);if(normalized.blocks.length>100){status.textContent='最大100文です。';return;}if(normalized.blocks.length!==data.blocks.length){data=normalized;render();status.textContent='複数の文を1文ずつに分けました。内容を確認して、もう一度「戻る」を押してください。';return;}save(node,data);close();},footer);
+ button('Save and return / 入力を保存して戻る',()=>{if(data.blocks.some(b=>!b.text.trim())){status.textContent='空欄へ台詞を入力するか、－で削除してください。';return;}const normalized=normalize(data);if(normalized.blocks.length>100){status.textContent='最大100文です。';return;}if(normalized.blocks.length!==data.blocks.length){data=normalized;render();status.textContent='複数の文を1文ずつに分けました。内容を確認して、もう一度「戻る」を押してください。';return;}saveScript(node,data);close();},footer);
  dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  editors.set(node.id,{dialog,render,status});document.body.append(dialog);dialog.showModal();Object.assign(dialog.style,{display:'flex',flexDirection:'column'});render();
 }

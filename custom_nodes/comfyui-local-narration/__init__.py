@@ -81,19 +81,10 @@ class NarrationDirection:
   if character not in CHARACTERS:raise ValueError('声キャラの選択値が不正です。')
   if mode!='AIおまかせ' and CHARACTERS[character]:style=CHARACTERS[character]+(' 追加指定：'+style.strip() if style.strip() else '')
   if not text.strip():raise ValueError('読み上げ原稿を入力してください。')
+  if mode=='AIおまかせ' or (mode=='AI提案＋手動上書き' and (engine=='おまかせ' or not style.strip() or not speed)):raise ValueError('声が未確定です。最初のノードの「AIに相談」または「声をプリセットから選ぶ・調整」で、声を採用してから実行してください。')
   if speed and not .5<=speed<=2:raise ValueError('話速は0（おまかせ）、または0.5〜2.0倍です。')
   try:
-   if mode=='手動' or (mode=='AI提案＋手動上書き' and engine!='おまかせ' and style.strip() and speed):
-    p={'engine':'Irodori' if engine=='おまかせ' else engine,'style':style.strip() or '自然で聞き取りやすい日本語のナレーション。','speed':speed or 1.0,'reason':'手動設定' if mode=='手動' else '指定済みの音声設定を採用'}
-   else:
-    mm.unload_all_models();mm.soft_empty_cache()
-    if not _planner_lock.acquire(blocking=False):raise RuntimeError('AIへの相談が実行中です。完了後に実行してください。')
-    try:p=load_planner().propose(text,purpose,seed,lambda msg:notify(unique_id,'running',msg))
-    finally:_planner_lock.release()
-    if mode=='AI提案＋手動上書き':
-     if engine!='おまかせ':p['engine']=engine
-     if style.strip():p['style']=style.strip()
-     if speed:p['speed']=speed
+   p={'engine':'Irodori' if engine=='おまかせ' else engine,'style':style.strip() or '自然で聞き取りやすい日本語のナレーション。','speed':speed or 1.0,'reason':'画面で採用した声の設定'}
    chosen='design' if mode=='AIおまかせ' else dict(zip(VOICES,['design','preset']))[voice_mode]
    reference=None
    if mode!='AIおまかせ' and reference_audio and reference_audio.get('enabled'):
@@ -264,7 +255,7 @@ async def consult(request):
   body=await request.json()
   if not isinstance(body,dict):raise ValueError('相談の形式が不正です。')
   kind=body.get('kind','plan');text=body.get('text','');brief=body.get('brief','')
-  if kind not in ('plan','purpose','style','script'):raise ValueError('相談対象が不正です。')
+  if kind not in ('plan','purpose','style','script','compose'):raise ValueError('相談対象が不正です。')
   if not isinstance(text,str) or not isinstance(brief,str) or len(text)>10000 or len(brief)>4000 or not brief.strip():raise ValueError('相談内容を入力してください（4000文字以内）。')
   seed=body.get('seed',42)
   if type(seed) is not int or not 0<=seed<=2147483647:raise ValueError('候補番号が不正です。')
