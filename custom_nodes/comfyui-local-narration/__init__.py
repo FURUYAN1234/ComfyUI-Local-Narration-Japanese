@@ -1,4 +1,4 @@
-import importlib.util,json,subprocess,time,uuid,re
+import importlib.util,json,subprocess,time,uuid,re,threading
 from pathlib import Path
 from datetime import datetime
 import numpy as np
@@ -18,6 +18,7 @@ CHARACTERS={'自由指定':'','落ち着いた女性ナレーター':'落ち着�
 SPEAKERS=['Ono_anna','Aiden','Dylan','Eric','Ryan','Serena','Sohee','Uncle_fu','Vivian']
 def notify(node,state,text):
  PromptServer.instance.send_sync('local_narration.status',{'node':str(node),'state':state,'text':text})
+_planner_lock=threading.Lock()
 def load_planner():
  spec=importlib.util.spec_from_file_location('local_narration_planner',ROOT/'planner.py')
  module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
@@ -82,11 +83,13 @@ class NarrationDirection:
   if not text.strip():raise ValueError('読み上げ原稿を入力してください。')
   if speed and not .5<=speed<=2:raise ValueError('話速は0（おまかせ）、または0.5〜2.0倍です。')
   try:
-   if mode=='手動':
-    p={'engine':'Irodori' if engine=='おまかせ' else engine,'style':style.strip() or '自然で聞き取りやすい日本語のナレーション。','speed':speed or 1.0,'reason':'手動設定'}
+   if mode=='手動' or (mode=='AI提案＋手動上書き' and engine!='おまかせ' and style.strip() and speed):
+    p={'engine':'Irodori' if engine=='おまかせ' else engine,'style':style.strip() or '自然で聞き取りやすい日本語のナレーション。','speed':speed or 1.0,'reason':'手動設定' if mode=='手動' else '指定済みの音声設定を採用'}
    else:
     mm.unload_all_models();mm.soft_empty_cache()
-    p=load_planner().propose(text,purpose,seed,lambda msg:notify(unique_id,'running',msg))
+    if not _planner_lock.acquire(blocking=False):raise RuntimeError('AIへの相談が実行中です。完了後に実行してください。')
+    try:p=load_planner().propose(text,purpose,seed,lambda msg:notify(unique_id,'running',msg))
+    finally:_planner_lock.release()
     if mode=='AI提案＋手動上書き':
      if engine!='おまかせ':p['engine']=engine
      if style.strip():p['style']=style.strip()
@@ -143,7 +146,12 @@ class NarrationGenerate:
   notify(unique_id,'running','台詞と読みの確認待ち / Review readings')
   approved=review(dict(plan),unique_id)
   return self._generate_audio(approved,unique_id=unique_id,review_readings=False,**options)
- def _generate_audio(self,plan,unique_id=None,review_readings=False,**options):
+ def _generate_audio(self,*args,**kwargs):
+  if not _planner_lock.acquire(blocking=False):raise RuntimeError('AIへの相談が実行中です。完了後に音声生成を実行してください。')
+  try:return self._generate_audio_locked(*args,**kwargs)
+  finally:_planner_lock.release()
+
+ def _generate_audio_locked(self,plan,unique_id=None,review_readings=False,**options):
   p=dict(plan);reference=p.pop('_reference_audio',None)
   if review_readings:
    notify(unique_id,'running','台詞と読みの確認待ち / Review readings')
@@ -248,3 +256,24 @@ async def download_models(request):
   code=await child.wait()
   if code:notify(node,'error','モデル取得失敗 / Retry');return web.json_response({'error':'\n'.join(lines[-15:])},status=500)
   notify(node,'complete','モデル取得完了 / Models ready');return web.json_response({'ok':True})
+
+@PromptServer.instance.routes.post('/local-narration/consult')
+async def consult(request):
+ if request.headers.get('Origin') and request.headers['Origin'].split('://',1)[-1]!=request.host:return web.json_response({'error':'Cross-origin request rejected'},status=403)
+ try:
+  body=await request.json()
+  if not isinstance(body,dict):raise ValueError('相談の形式が不正です。')
+  kind=body.get('kind','plan');text=body.get('text','');brief=body.get('brief','')
+  if kind not in ('plan','purpose','style','script'):raise ValueError('相談対象が不正です。')
+  if not isinstance(text,str) or not isinstance(brief,str) or len(text)>10000 or len(brief)>4000 or not brief.strip():raise ValueError('相談内容を入力してください（4000文字以内）。')
+  seed=body.get('seed',42)
+  if type(seed) is not int or not 0<=seed<=2147483647:raise ValueError('候補番号が不正です。')
+ except (ValueError,TypeError) as e:return web.json_response({'error':str(e)},status=400)
+ running,pending=PromptServer.instance.prompt_queue.get_current_queue()
+ if running or pending:return web.json_response({'error':'音声生成などの実行中です。終了後に相談してください。'},status=409)
+ if not _planner_lock.acquire(blocking=False):return web.json_response({'error':'AIへの相談が実行中です。終了後に再度相談してください。'},status=409)
+ try:
+  result=await asyncio.to_thread(load_planner().propose,text,brief,seed,lambda message:None,kind)
+  return web.json_response(result)
+ except Exception as e:return web.json_response({'error':str(e)},status=500)
+ finally:_planner_lock.release()

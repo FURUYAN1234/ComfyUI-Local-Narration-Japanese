@@ -54,22 +54,32 @@ Enable the separate reference node and upload suitable reference speech to use i
 
 ## Use / 使い方
 
-1. Enter the complete script and the intended use. / 読み上げる原稿全文と用途を入力します。
-2. Choose AI, Manual, or AI + manual override. / AIおまかせ・手動・AI提案＋手動上書きから選びます。
-3. Run, review each sentence and its reading, then generate. / 実行して各文と読みを確認し、音声生成へ進みます。
-4. Listen on the right and save MP3. / 右側で試聴してMP3を保存します。
+1. Choose a control mode in the preset panel. / プリセット欄で「AIにおまかせ」「一部を指定してAIにおまかせ」「すべて手動」を選びます。
+2. Enter the script; manual mode uses the sentence editor. / 台詞を入力します。手動では文章入力の小窓を使います。
+3. Choose purpose, character and tone presets. Text fields appear only for Custom. / 用途・声キャラクター・口調はプリセットで選び、「自由入力」を選ぶと文章欄が表示されます。
+4. Run, approve each sentence and reading, then generate. / 実行し、各文と読みを承認してから音声を生成します。
 
-AI chooses TTS, voice character, tone and speed according to the content. / AIは内容に合わせてTTS・声キャラ・口調・話速を選びます。
-Manual lets you select TTS and a character from node menus, plus additional style text. / 手動ではノードのメニューでTTSと声キャラを選び、文章で追加指定できます。
-The character provides a base description; extra style text is appended and should not contradict it. / 声キャラを基本説明とし、追加指定を追記します。矛盾する指定は避けてください。
-Qwen also offers nine fixed speakers through CustomVoice. / QwenではCustomVoiceの9話者も選べます。
-Reference mode uses recorded speech; Qwen Base does not apply style instructions. / 参照モードは音声を使い、Qwen Baseでは口調の文章指定は適用されません。
-AI + override prioritizes a specified TTS, character/style and nonzero speed. / AI＋上書きでは、指定TTS・声キャラや口調・0以外の話速を優先します。
-The original script is preserved; the confirmed reading is sent to TTS. / 原稿は保持し、確認した読みをTTSへ渡します。
+Automatic purpose uses the script without requiring a separate brief. / 用途の「台詞から自動判断」では、別の用途文章は不要です。
+In partial mode, specified model, voice/tone and nonzero speed take priority; the remaining settings are chosen by AI. / 一部指定ではモデル・声や口調・0以外の話速を優先し、残りをAIが選びます。
+Standard in manual mode uses a natural narration style. / 手動の「標準」は自然なナレーション設定です。
+Character Custom opens the shared voice/tone instruction field. / 声キャラクターの「自由入力」は、声質・口調の共通指示欄を開きます。
+
+### Consult and edit / 相談して修正
+
+In AI modes, press **Consult AI** to describe your wishes. The proposal appears in an editable dialog with model and speed controls. / AIモードの「おまかせ設定を相談・編集」で希望を伝えると、小窓に提案文とモデル・話速が表示され、修正できます。
+Press **Apply** to adopt the result as specified settings; the mode switches to partial control. Cancel leaves all original settings intact. / 「修正内容を採用」で指定設定として反映し、一部指定モードへ切り替わります。キャンセルでは元の設定を変えません。
+Custom purpose and voice/tone also offer consultation buttons to turn wishes into instruction text. / 用途・声質と口調の自由入力にも相談ボタンがあり、希望から指示文を作れます。
+Consultation uses the configured local LM Studio model and does not rewrite the script. / 相談は設定済みのローカルLM Studioを使い、読み上げ台詞を書き換えません。
+Closing a pending consultation discards its result; computation finishes in the background and then releases the model. / 相談中に閉じると結果は採用されません。計算は終了まで続き、その後モデルを解放します。
+Consultation is unavailable while a generation is queued or running. / 生成の待機中・実行中は相談できません。
+AI proposals are optional: normal Run still supports automatic voice selection followed by mandatory reading approval. / 相談は任意です。通常の実行でもAIによる音声設定の選定と、必須の読み承認を利用できます。
+
+The original script is preserved; the approved reading is sent to TTS. / 原稿は保持し、承認した読みをTTSへ渡します。
+Reference voice uses the separate ON/OFF node; Qwen reference mode does not apply voice/tone text. / 参照声は別のON/OFFノードを使います。Qwen参照モードでは声質・口調の文章指定は適用されません。
 
 ## Manual sentence input / 手動の文章入力
 
-Choose Manual, then click **Manual dialogue +/−** on the direction node. / 手動を選び、原稿ノード下部の「手動の台詞を追加・編集（＋／－）」を押します。
+Choose **All manual**, then click **Manual dialogue +/−** on the direction node. / 「すべて手動」を選び、原稿ノード下部の「手動の台詞を追加・編集（＋／－）」を押します。
 Enter one original sentence per field, keeping kanji. Add/remove with +/−; Undo restores the last removal. / 漢字交じりの原文を1枠1文で入力し、＋／－で追加・削除します。直前の削除は取り消せます。
 Multiple sentences are split into separate fields before returning. / 複数文を入力した場合は、戻る前に1文ずつへ分けて確認できます。
 The input window only edits text; it does not generate, play or download audio. / この窓は原稿編集専用で、生成・再生・保存は行いません。
