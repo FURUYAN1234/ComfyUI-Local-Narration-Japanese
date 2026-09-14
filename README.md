@@ -49,8 +49,8 @@ For CLI download after setup: / セットアップ後に端末で取得する場
   /path/to/ComfyUI/custom_nodes/comfyui-local-narration/runtime/download_models.py
 ```
 
-The placeholder audio is silence and is ignored outside reference mode. / 初期参照音声は無音のプレースホルダーで、参照モード以外では使用しません。
-Upload your own suitable reference before selecting Reference. / 参照モードを選ぶ前に、使用する参照音声をアップロードしてください。
+Reference OFF requires no audio file. / 参照OFFでは音声ファイルは不要です。
+Enable the separate reference node and upload suitable reference speech to use it. / 別の参照ノードをONにし、参照する発話音声をアップロードして使用します。
 
 ## Use / 使い方
 
@@ -67,20 +67,23 @@ Reference mode uses recorded speech; Qwen Base does not apply style instructions
 AI + override prioritizes a specified TTS, character/style and nonzero speed. / AI＋上書きでは、指定TTS・声キャラや口調・0以外の話速を優先します。
 The original script is preserved; the confirmed reading is sent to TTS. / 原稿は保持し、確認した読みをTTSへ渡します。
 
-## Dialogue blocks (manual) / 台詞ブロック（手動）
+## Manual sentence input / 手動の文章入力
 
-Choose Manual and click Dialogue blocks on the direction node. / 手動を選び、原稿ノードの「台詞ブロックを編集」を押します。
-Use + to append a block, - to remove it, and Undo remove to restore the last removed block. / ＋で末尾に追加、－で削除、削除を戻すで直前の削除を取り消します。
-At least one block is retained; enter text in empty blocks before generation. / 最低1ブロックを残します。生成前に空の台詞を入力してください。
-Each block can contain multiple sentences; selected blocks still pass through pronunciation review. / 1ブロックに複数の文を入れられ、生成対象の台詞は読み確認を通ります。
-Generate one block or all blocks; each has its own audio player and MP3 download. / 台詞単位または全台詞を生成でき、各ブロックで再生・MP3保存できます。
-Voice and detailed settings are shared across blocks. / 声と詳細設定は全ブロック共通です。
-Names use a three-digit index plus the first 40 characters of the original text, with unsafe filename characters replaced. / 名前は3桁の通し番号＋元の台詞の先頭40文字とし、ファイル名に使えない文字は置換します。
-Example: `001_こんにちは。.mp3`; each run has a unique output directory, preserving previous audio. / 例：`001_こんにちは。.mp3`。実行ごとに別フォルダーへ保存し、以前の音声を残します。
-Outputs are under `output/audio/LocalNarration/Blocks/`; `blocks.json` is the result record, not a workflow. / 左記の配下へ保存し、blocks.jsonは結果記録で、ワークフローではありません。
-Editing text marks the player as previous-text audio until regenerated. / 台詞編集後は、再生成するまで変更前の音声であることを表示します。
-Block text and playback links are saved with the workflow; save the workflow before closing the browser. / 台詞と再生リンクはワークフローに保存されます。ブラウザーを閉じる前にワークフローを保存してください。
-AI modes keep using the original script field; manual blocks are retained but not used. / AIモードでは通常の原稿欄を使い、手動ブロックは保持されますが使用しません。
+Choose Manual, then click **Manual dialogue +/−** on the direction node. / 手動を選び、原稿ノード下部の「手動の台詞を追加・編集（＋／－）」を押します。
+Enter one original sentence per field, keeping kanji. Add/remove with +/−; Undo restores the last removal. / 漢字交じりの原文を1枠1文で入力し、＋／－で追加・削除します。直前の削除は取り消せます。
+Multiple sentences are split into separate fields before returning. / 複数文を入力した場合は、戻る前に1文ずつへ分けて確認できます。
+The input window only edits text; it does not generate, play or download audio. / この窓は原稿編集専用で、生成・再生・保存は行いません。
+Save and return, then use the normal Run button. / 入力を保存して戻り、通常の「実行」を押します。
+Immediately before TTS, approve the original/readings dialog; old OFF flags do not bypass approval. / TTS直前に原文と読みの確認窓で承認します。旧設定のOFFでも承認を省略できません。
+After generation, the final **Completed audio** node plays/downloads the whole audio and each sentence. / 生成後、最後の「完成音声」ノードで全体・各文の音声を再生・保存します。
+Filenames use a 3-digit index and original sentence prefix, e.g. `001_こんにちは。.mp3`. / ファイル名は3桁番号＋原文冒頭です。
+Each run uses a separate directory under `output/audio/LocalNarration/Blocks/`, retaining prior files. / 左記の配下へ実行ごとに別フォルダーで保存し、以前のファイルを残します。
+Save the workflow to retain your sentence inputs. / 入力した文章を残すにはワークフローを保存してください。
+
+The three fields are script, AI purpose, and voice/tone. Purpose is inactive in manual mode; voice/tone is not spoken. / 3つの欄は原稿・AIへの用途指示・声質と口調です。手動時は用途欄が無効で、声質と口調は読み上げません。
+Reference voice is controlled by a separate ON/OFF node. OFF requires no audio file or placeholder. / 参照音声は別ノードのON/OFFで切り替えます。OFFでは音声ファイルや仮の無音ファイルは不要です。
+Enable it and upload speech only when using a reference; AI automatic mode ignores it. / 参照声を使うときだけONにして音声をアップロードします。AIおまかせでは参照を使いません。
+Irodori does not offer Qwen-only presets. Model-specific parameters are in Advanced settings, one model at a time. / IrodoriではQwen専用話者を選べません。モデル固有の値は詳細設定でモデルごとに表示します。
 
 ## Pronunciation review / 読み確認
 

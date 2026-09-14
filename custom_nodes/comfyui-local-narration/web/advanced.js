@@ -1,0 +1,11 @@
+import {app} from "../../scripts/app.js";
+app.registerExtension({name:'LocalNarration.Advanced',nodeCreated(node){if(node.comfyClass!=='LocalNarrationGenerate')return;
+ const modelWidgets=node.widgets.filter(w=>/^(irodori_|qwen_)/.test(w.name));for(const w of modelWidgets){w.hidden=true;w.computeSize=()=>[0,-4];}
+ node.addWidget('button','Advanced / 選択モデルの詳細設定',null,()=>{
+ const link=app.graph.links[node.inputs.find(i=>i.name==='plan')?.link];const direction=link?app.graph.getNodeById(link.origin_id):null;const value=n=>direction?.widgets.find(w=>w.name===n)?.value;const auto=value('mode')!=='手動'&&value('engine')==='おまかせ'||value('mode')==='AIおまかせ';let model=value('engine')==='Qwen'?'Qwen':'Irodori';
+ const d=document.createElement('dialog');Object.assign(d.style,{width:'min(520px,90vw)',maxHeight:'85vh',overflow:'auto',background:'#20242c',color:'white',padding:'18px',borderRadius:'10px'});const add=(tag,text,parent=d)=>{const e=document.createElement(tag);e.textContent=text||'';parent.append(e);return e;};add('h3','Advanced settings / モデル別の詳細設定');
+ if(auto){add('p','AIが選んだモデルの設定だけを使用します。 / Only the chosen model settings are applied.');const select=add('select');for(const m of ['Irodori','Qwen']){const o=add('option',m,select);o.value=m;}select.value=model;select.onchange=()=>{model=select.value;render();};}else add('p',model+' — 選択中のモデル / Selected model');
+ const body=add('div');function render(){body.replaceChildren();for(const w of modelWidgets.filter(w=>w.name.startsWith(model.toLowerCase()+'_'))){const row=add('label','',body);Object.assign(row.style,{display:'grid',gridTemplateColumns:'1fr 100px',gap:'8px',margin:'12px 0'});add('span',w.label||w.name,row);const i=add('input','',row);i.type='number';i.value=w.value;i.min=w.options?.min??'';i.max=w.options?.max??'';i.step=w.name.endsWith('steps')||w.name.endsWith('top_k')?'1':'0.05';i.onchange=()=>{const v=Number(i.value);if(!Number.isFinite(v)||i.value===''||!i.checkValidity()){i.value=w.value;return;}w.value=v;app.graph.setDirtyCanvas(true,true);};}}
+ render();const close=add('button','Save and return / 設定して戻る');close.onclick=()=>{d.close();d.remove();};d.addEventListener('cancel',()=>d.remove());document.body.append(d);d.showModal();
+ },{serialize:false});
+}});

@@ -1,0 +1,346 @@
+{
+  "id": "c0341628-870d-433c-841a-8f42407d095e",
+  "revision": 0,
+  "last_node_id": 7,
+  "last_link_id": 6,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        1080
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Guide / 説明",
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "# Japanese Narration / 日本語ナレーション\nIrodori / Qwen3-TTS · v1.1.0-dev\n\n## Start / 使い方\n1. Enter script and purpose in node 1. / ①に原稿と用途を入力。\n2. Choose AI or Manual, then Run. / AI・手動を選び、実行。\n3. Review each sentence and hiragana in the dialog, then Generate. / 確認窓で文ごとに台詞とひらがなを確認して生成。\n4. Listen and save MP3 on the right. / 右側で再生・MP3保存。\n\nManual: edit dialogue with +/−, return and Run; review readings, then play/save each block on the final node. / 手動：＋/−で台詞を編集して戻る→実行→読み確認→最後のノードで台詞別再生・保存。\nShared voice settings; save workflow to retain blocks. / 声設定は共通。台詞を残すにはワークフローを保存。\nBlocks: output/audio/LocalNarration/Blocks/ — 001_台詞.mp3. / 実行ごとに別フォルダーへ保存。\n\n## Modes and priority / 切替・優先順位\nAI: chooses TTS, character, tone and speed. / AIおまかせ：TTS・声キャラ・口調・話速を選択。手動の声設定は無効。\nManual: uses your values without LLM. / 手動：入力値を使用し、LLMを呼ばない。\nAI + override: explicit model, nonempty tone and nonzero speed win. / AI＋上書き：指定モデル・空欄でない口調・0以外の話速を優先。\nGeneration parameters always use your values. / 詳細生成値は常に入力値を使用。\n\n## Voice / 声の調整\nCharacter menu + extra instructions. / 声キャラをメニューで選び、口調を文章で追記可能。\nQwen preset: nine speakers. / Qwen既定：9話者から選択。\nReference: load audio below. / 参照：下の音声読込を使用。\nQwen reference ignores tone text. / Qwen参照では口調の文章指定は無効。\nSpeed, pitch, volume and model-specific parameters are adjustable. / 話速・音程・音量・モデル固有の生成値を調整可能。\n\n## Readings / 読み確認\nOriginal above, editable reading below, for every sentence. / 全文を文ごとに原文が上・編集できる読みが下に表示。\nRemember stores edited sentence readings locally. / 記憶ONで修正した文の読みを保存。\nAfter generation starts, corrections require regeneration. / 開始後の修正は再生成となり、抑揚や長さは変わる場合あり。\n\n## Flow / 処理順\nLM Studio GPU → unload → reading review → TTS GPU → save. / LM Studio GPU→解放→読み確認→TTS GPU→保存。\nStartup and completion appear in the node title. / 起動・確認待ち・完了をノード見出しに表示。\n\n## Files / フォルダー構成\n```text\nComfyUI/\n├─ custom_nodes/comfyui-local-narration/\n├─ input/  ← reference audio / 参照音声\n└─ output/audio/LocalNarration/\n   ├─ 日時_ID/audio.wav\n   ├─ 日時_ID/request.json, result.json\n   └─ MP3/  ← playback and save / 再生・保存\n```\nJSON records settings; it is not a workflow. / 出力JSONは設定記録で、ワークフローではありません。\nUse Download models after initial setup. / 初回セットアップ後、モデル取得ボタンを使用。\nIrodori: MIT (see model terms); Qwen: Apache-2.0. / モデル利用条件はREADME参照。\nSee the included README for installation. / 導入方法は同梱READMEを参照。\nGPU generation and automatic selection tested; listen to pronunciation. / GPU生成・自動選択を検証済み。発音は試聴して確認。\n\n\nInput fields / 入力欄：①読む台詞 ②AIへの用途指示（手動OFF） ③声質・口調（読まない）。\nReference OFF needs no audio file. / 参照OFFではファイル不要。参照ON時のみ音声・参照原稿を入力。\nAdvanced opens only the selected model settings. / モデル固有の設定は「詳細設定」に収納。\n\nSentence editor: one kanji-containing sentence per field; no audio controls here. / 原稿窓は漢字交じりの文を1枠ずつ入力。音声操作は最後の完成ノード。\nApproval is mandatory immediately before TTS. / 音声生成直前の読み承認は必須。\n"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LocalNarrationDirection",
+      "pos": [
+        430,
+        0
+      ],
+      "size": [
+        460,
+        740
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "reference_audio",
+          "type": "NARRATION_REFERENCE",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Voice plan / 音声企画",
+          "type": "NARRATION_PLAN",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "Chosen settings / 選定内容",
+          "type": "STRING",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "title": "1. Script and mode / 原稿・AIと手動の切替",
+      "properties": {
+        "Node name for S&R": "LocalNarrationDirection"
+      },
+      "widgets_values": [
+        "日本語で、作りたい動画を伝えるだけ。声と映像で、アイデアを届けます。",
+        "ワークフローの紹介動画。聞き取りやすく親しみのある解説。",
+        "AIおまかせ",
+        "おまかせ",
+        "デザイン",
+        "Ono_anna",
+        "",
+        0,
+        42,
+        "fixed",
+        "自由指定",
+        ""
+      ]
+    },
+    {
+      "id": 3,
+      "type": "LocalNarrationGenerate",
+      "pos": [
+        900,
+        0
+      ],
+      "size": [
+        420,
+        410
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "plan",
+          "type": "NARRATION_PLAN",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Narration / 音声",
+          "type": "AUDIO",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "Files and settings / 保存先・設定",
+          "type": "STRING",
+          "links": [
+            3,
+            6
+          ]
+        }
+      ],
+      "title": "2. Review and generate / 読み確認・音声生成",
+      "properties": {
+        "Node name for S&R": "LocalNarrationGenerate"
+      },
+      "widgets_values": [
+        42,
+        "fixed",
+        0,
+        0,
+        250,
+        40,
+        3,
+        3,
+        5,
+        1,
+        0.9,
+        0.8,
+        50,
+        1.05,
+        true
+      ]
+    },
+    {
+      "id": 4,
+      "type": "LocalNarrationPlayback",
+      "pos": [
+        1370,
+        0
+      ],
+      "size": [
+        480,
+        700
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 2
+        },
+        {
+          "name": "details",
+          "type": "STRING",
+          "link": 6
+        }
+      ],
+      "outputs": [],
+      "title": "3. Completed audio / 完成音声・台詞別の再生と保存",
+      "properties": {
+        "Node name for S&R": "LocalNarrationPlayback"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 5,
+      "type": "PreviewAny",
+      "pos": [
+        1380,
+        760
+      ],
+      "size": [
+        480,
+        280
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "Result / 保存先・生成設定",
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "PreviewAny",
+      "pos": [
+        930,
+        480
+      ],
+      "size": [
+        420,
+        290
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "Chosen voice / AI選定・確定した声",
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "LocalNarrationReference",
+      "pos": [
+        430,
+        800
+      ],
+      "size": [
+        460,
+        280
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "Reference setting / 参照設定",
+          "type": "NARRATION_REFERENCE",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "title": "Reference ON/OFF / 参照音声の切替",
+      "properties": {
+        "Node name for S&R": "LocalNarrationReference"
+      },
+      "widgets_values": [
+        false,
+        "",
+        ""
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "NARRATION_PLAN"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      0,
+      "AUDIO"
+    ],
+    [
+      3,
+      3,
+      1,
+      5,
+      0,
+      "STRING"
+    ],
+    [
+      4,
+      2,
+      1,
+      6,
+      0,
+      "STRING"
+    ],
+    [
+      5,
+      7,
+      0,
+      2,
+      0,
+      "NARRATION_REFERENCE"
+    ],
+    [
+      6,
+      3,
+      1,
+      4,
+      1,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5,
+      "offset": [
+        100,
+        150
+      ]
+    },
+    "local_narration_version": "1.1.0-dev"
+  },
+  "version": 0.4
+}

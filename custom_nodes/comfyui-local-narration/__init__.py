@@ -13,7 +13,7 @@ LOCAL=Path(__file__).with_name('local_config.json')
 ROOT=Path(json.loads(LOCAL.read_text())['runtime']) if LOCAL.exists() else Path(__file__).with_name('runtime')
 MODES=['AIおまかせ','手動','AI提案＋手動上書き']
 ENGINES=['おまかせ','Irodori','Qwen']
-VOICES=['デザイン','用意された声（Qwen）','参照音声']
+VOICES=['デザイン','用意された声（Qwen）']
 CHARACTERS={'自由指定':'','落ち着いた女性ナレーター':'落ち着いた成人女性。聞き取りやすい標準語で丁寧な解説。','明るい女性ナレーター':'明るく親しみやすい成人女性。自然で軽快な案内。','落ち着いた男性ナレーター':'落ち着いた成人男性。低めの声で丁寧な説明。','元気な男性ナレーター':'元気で親しみやすい成人男性。軽快な口調。','やさしい物語の語り手':'柔らかい成人の声。穏やかなテンポで物語を語る。','元気なアニメキャラクター':'表情豊かで元気な若い成人女性のキャラクター声。','クールなアニメキャラクター':'若い成人男性の落ち着いたキャラクター声。控えめでクールな口調。','落ち着いたニュース調':'成人の中性的な声。明瞭で抑揚を抑えたニュース調。'}
 SPEAKERS=['Ono_anna','Aiden','Dylan','Eric','Ryan','Serena','Sohee','Uncle_fu','Vivian']
 def notify(node,state,text):
@@ -42,6 +42,16 @@ def block_filename(index,text):
  title=re.sub(r'\s+',' ',title).strip(' .')[:40].rstrip(' .') or '台詞'
  return f'{index:03d}_{title}.mp3'
 
+class NarrationReference:
+ @classmethod
+ def INPUT_TYPES(cls):
+  return {'required':{'enabled':('BOOLEAN',{'default':False,'label_on':'ON / 参照声を使用','label_off':'OFF / 参照声を使わない'}),'audio':('STRING',{'default':'','tooltip':'参照を使う場合だけ音声をアップロード。OFFなら空欄のままで実行できます。'}),'transcript':('STRING',{'multiline':True,'default':'','tooltip':'参照音声で話している内容。生成したい台詞ではありません。'})}}
+ RETURN_TYPES=('NARRATION_REFERENCE',);RETURN_NAMES=('Reference setting / 参照設定',)
+ FUNCTION='reference';CATEGORY='audio/Local Narration'
+ def reference(self,enabled,audio,transcript):
+  # Only pass settings. Disabled/AI paths never read a file or require a placeholder.
+  return ({'enabled':enabled,'audio':audio if enabled else '', 'transcript':transcript if enabled else ''},)
+
 class NarrationDirection:
  @classmethod
  def INPUT_TYPES(cls):
@@ -57,7 +67,7 @@ class NarrationDirection:
    'seed':('INT',{'default':42,'min':0,'max':2147483647}),
    'character':(list(CHARACTERS),{'default':'自由指定'}),
    'reference_text':('STRING',{'multiline':True,'default':'','tooltip':'参照音声で話している原稿。Qwenでは入力推奨。'}),
-  },'optional':{'reference_audio':('AUDIO',),'dialogue_blocks':('STRING',{'default':'','multiline':False})},'hidden':{'unique_id':'UNIQUE_ID'}}
+  },'optional':{'reference_audio':('NARRATION_REFERENCE',),'dialogue_blocks':('STRING',{'default':'','multiline':False})},'hidden':{'unique_id':'UNIQUE_ID'}}
  RETURN_TYPES=('NARRATION_PLAN','STRING')
  RETURN_NAMES=('Voice plan / 音声企画','Chosen settings / 選定内容')
  FUNCTION='plan';CATEGORY='audio/Local Narration'
@@ -81,13 +91,23 @@ class NarrationDirection:
      if engine!='おまかせ':p['engine']=engine
      if style.strip():p['style']=style.strip()
      if speed:p['speed']=speed
-   chosen='design' if mode=='AIおまかせ' else dict(zip(VOICES,['design','preset','reference']))[voice_mode]
+   chosen='design' if mode=='AIおまかせ' else dict(zip(VOICES,['design','preset']))[voice_mode]
+   reference=None
+   if mode!='AIおまかせ' and reference_audio and reference_audio.get('enabled'):
+    chosen='reference'
+    name=reference_audio.get('audio','').strip()
+    if not name:raise ValueError('参照音声をONにする場合は、参照ノードで音声を選択してください。')
+    path=Path(folder_paths.get_annotated_filepath(name)).resolve()
+    if not path.is_relative_to(Path(folder_paths.get_input_directory()).resolve()) or not path.is_file():raise ValueError('参照音声が見つかりません。参照ノードからアップロードしてください。')
+    from comfy_extras.nodes_audio import load
+    waveform,sr=load(str(path));reference={'waveform':waveform.unsqueeze(0),'sample_rate':sr}
+    if not waveform.numel() or float(waveform.abs().max())<1e-5:raise ValueError('参照音声が無音です。実際に話している音声を選択してください。')
+    reference_text=reference_audio.get('transcript','')
    if chosen=='preset' and p['engine']!='Qwen':raise ValueError('用意された話者はQwen専用です。Qwenを選ぶかデザインを使用してください。')
-   if chosen=='reference' and reference_audio is None:raise ValueError('参照音声モードでは音声を接続してください。')
    p.update(text=text,voice_mode=chosen,speaker=speaker,reference_text=reference_text,selection_mode=mode,character="AI選定："+p["style"] if mode=="AIおまかせ" else character)
    if blocks:p.update(dialogue_blocks=blocks,block_target=target,direction_id=str(unique_id))
    shown=json.dumps(p,ensure_ascii=False,indent=2)
-   if chosen=='reference':p['_reference_audio']=reference_audio
+   if chosen=='reference':p['_reference_audio']=reference
    notify(unique_id,'complete','音声企画完了 / '+p['engine'])
    return (p,shown)
   except Exception:
@@ -118,7 +138,12 @@ class NarrationGenerate:
  @classmethod
  def IS_CHANGED(cls,**kwargs):return float("nan")
  def generate(self,plan,unique_id=None,review_readings=True,**options):
-  if plan.get('dialogue_blocks'):return self.generate_blocks(plan,unique_id,review_readings,options)
+  # Public execution always requires approval; old workflow booleans cannot bypass it.
+  if plan.get('dialogue_blocks'):return self.generate_blocks(plan,unique_id,True,options)
+  notify(unique_id,'running','台詞と読みの確認待ち / Review readings')
+  approved=review(dict(plan),unique_id)
+  return self._generate_audio(approved,unique_id=unique_id,review_readings=False,**options)
+ def _generate_audio(self,plan,unique_id=None,review_readings=False,**options):
   p=dict(plan);reference=p.pop('_reference_audio',None)
   if review_readings:
    notify(unique_id,'running','台詞と読みの確認待ち / Review readings')
@@ -173,7 +198,7 @@ class NarrationGenerate:
    part=dict(p);part['text']='\n'.join(lines[cursor:cursor+count]) if review_readings else b['text'];cursor+=count
    part['original_text']=b['text'];part.pop('reading_review',None)
    if review_readings:part['reading_review']={'rows':split_rows(b['text']),'readings':part['text'].split('\n')}
-   audio,report=self.generate(part,unique_id=node,review_readings=False,**options)
+   audio,report=self._generate_audio(part,unique_id=node,review_readings=False,**options)
    audios.append(audio);name=block_filename(index,b['text']);dest=batch/name
    wav=batch/(dest.stem+'.wav');sf.write(wav,audio['waveform'][0].numpy().T,audio['sample_rate'])
    subprocess.run(['ffmpeg','-v','error','-nostdin','-i',str(wav),'-codec:a','libmp3lame','-b:a','192k',str(dest)],check=True,timeout=120)
@@ -189,8 +214,19 @@ class NarrationGenerate:
   notify(node,'complete',str(len(outputs))+' blocks complete / 台詞の音声生成完了')
   return {'ui':{'dialogue_blocks':outputs},'result':({'waveform':torch.cat(chunks,dim=-1),'sample_rate':sr},json.dumps({'blocks':outputs,'folder':str(batch)},ensure_ascii=False,indent=2))}
 
-NODE_CLASS_MAPPINGS={'LocalNarrationDirection':NarrationDirection,'LocalNarrationGenerate':NarrationGenerate}
-NODE_DISPLAY_NAME_MAPPINGS={'LocalNarrationDirection':'Voice direction / 日本語おまかせ・手動設定','LocalNarrationGenerate':'Generate speech / 音声生成・詳細設定'}
+class NarrationPlayback:
+ @classmethod
+ def INPUT_TYPES(cls):return {'required':{'audio':('AUDIO',),'details':('STRING',{'forceInput':True})}}
+ RETURN_TYPES=();FUNCTION='save';OUTPUT_NODE=True;CATEGORY='audio/Local Narration'
+ def save(self,audio,details):
+  report=json.loads(details);out=Path(folder_paths.get_output_directory())/'audio/LocalNarration/MP3'
+  out.mkdir(parents=True,exist_ok=True);base=datetime.now().strftime('%Y%m%d%H%M%S')+'_'+uuid.uuid4().hex[:6]
+  wav=out/(base+'.wav');mp3=out/(base+'.mp3');sf.write(wav,audio['waveform'][0].detach().cpu().numpy().T,audio['sample_rate'])
+  subprocess.run(['ffmpeg','-v','error','-nostdin','-i',str(wav),'-codec:a','libmp3lame','-b:a','192k',str(mp3)],check=True,timeout=120)
+  return {'ui':{'completed_audio':[{'filename':mp3.name,'subfolder':'audio/LocalNarration/MP3','type':'output','text':'Full narration / 全体音声'}],'dialogue_blocks':report.get('blocks',[])}}
+
+NODE_CLASS_MAPPINGS={'LocalNarrationPlayback':NarrationPlayback,'LocalNarrationReference':NarrationReference,'LocalNarrationDirection':NarrationDirection,'LocalNarrationGenerate':NarrationGenerate}
+NODE_DISPLAY_NAME_MAPPINGS={'LocalNarrationPlayback':'Completed audio / 完成音声の再生・保存','LocalNarrationReference':'Reference voice ON/OFF / 参照音声の切替','LocalNarrationDirection':'Voice direction / 日本語おまかせ・手動設定','LocalNarrationGenerate':'Generate speech / 音声生成・詳細設定'}
 WEB_DIRECTORY='./web'
 
 import asyncio
