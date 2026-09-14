@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+local_config.json
+config.json
+private/
+envs/
+build/

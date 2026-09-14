@@ -1,0 +1,6 @@
+* text=auto
+custom_nodes/** -text
+*.json -text
+**/LICENSE* -text
+**/requirements*.txt -text
+*.png -text
