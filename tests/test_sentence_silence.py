@@ -8,7 +8,7 @@ audio_join = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(audio_join)
 
 
-def test_default_sentence_silence_is_half_second():
+def test_default_sentence_silence_is_eight_hundred_ms():
     assert audio_join.DEFAULT_PAUSE_MS == 800
     assert audio_join.silence_samples(48000) == 38400
 

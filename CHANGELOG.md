@@ -1,5 +1,10 @@
 # Changes / 更新履歴
 
+## v1.1.3
+
+Added a named sentence-silence setting to the generation node. Full narration inserts 800 ms between sentences by default, while each sentence MP3 remains unchanged. Existing audio must be regenerated to use a newly selected silence duration. / 音声生成ノードに台詞間無音の設定を追加しました。全体音声だけに標準800msの無音を入れ、台詞別MP3は変更しません。設定を変えた場合は再生成で反映します。
+
+
 ## v1.1.2
 
 When per-sentence audio is generated from a voice design, retain the first sentence as the voice reference for every later sentence. This keeps one speaker and delivery for the full narration instead of designing a new speaker per sentence. Qwen built-in speakers and user reference audio remain unchanged. / 声デザインで台詞別音声を作るとき、最初の文の音声を後続の全台詞の参照声として使い、文章ごとに別の話者を設計しないよう修正しました。Qwenの用意された話者とユーザー指定の参照音声は従来どおりです。

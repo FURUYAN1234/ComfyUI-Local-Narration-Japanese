@@ -149,6 +149,8 @@ The initial environment setup was checked with existing compatible environments;
 
 ## Version / バージョン
 
+v1.1.3: full narration now inserts 800 ms of silence between sentences by default. This affects only the combined full track; per-sentence MP3 files are unchanged. Regenerate the narration to apply a changed silence value to audio. / v1.1.3では、全体音声に台詞ごと800msの無音を標準で入れます。台詞別MP3は変わりません。間の設定を変更したあとは、音声を再生成して反映します。
+
 v1.1.2: when narration is saved as per-sentence audio, the first generated design voice is retained as the reference for every later sentence. This keeps one speaker and delivery across the narration; Qwen built-in speakers and user reference audio remain fixed as before. / 台詞別MP3を作る場合も、最初の文で生成したデザイン声を後続の全台詞の参照声として保持し、ナレーション全体で話者・話し方を統一します。Qwenの用意された話者とユーザー指定の参照音声は従来どおり固定です。
 
 v1.1.1: renamed the voice button to “Voice settings / 声を確認・調整” and documented the fully manual route, so an adopted AI voice is clearly an editable current setting, not an additional manual-selection step. / AIが提案して採用した声も現在の設定として確認・変更できることが伝わるよう、声のボタンを「Voice settings / 声を確認・調整」へ変更し、全手入力の手順を記載。
