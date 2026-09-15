@@ -31,7 +31,7 @@ assert(all(node.panel).some(e=>e.textContent.includes('声は未確定')));
  await find(node.panel,'Run / 実行して読みを確認').onclick();assert.deepEqual(queued,[[0,1]],'node Run must use standard graph queue once');
  node.narrationEditSentences();d=body.children.at(-1);assert.deepEqual(find(d,'Save / 台詞を保存して戻る').parentElement.children.map(e=>e.textContent),['Cancel / キャンセル（変更を破棄）','Save / 台詞を保存して戻る','削除を戻す / Undo remove','＋ 台詞を追加 / Add']);assert.equal(all(d).filter(e=>e.tag==='textarea').length,5);
  field(d,'台詞ブロック1').value='破棄';field(d,'台詞ブロック1').oninput();find(d,'Cancel / キャンセル（変更を破棄）').onclick();assert.equal(JSON.parse(get('dialogue_blocks').value).blocks[0].text,'編集した一行目です。');
- find(node.panel,'Manual voice / 声を手動で選ぶ・調整').onclick();d=body.children.at(-1);
+ find(node.panel,'Voice settings / 声を確認・調整').onclick();d=body.children.at(-1);
  const tone=field(d,'Tone / 口調');tone.value='自由入力';tone.onchange();assert(!field(d,'Custom voice and tone / 声質・口調の自由入力').parentElement.hidden);
  tone.value='明るい';tone.onchange();assert(field(d,'Custom voice and tone / 声質・口調の自由入力').parentElement.hidden);
  find(d,'Cancel / キャンセル（変更を破棄）').onclick();assert.equal(get('style').value,'穏やかな声');

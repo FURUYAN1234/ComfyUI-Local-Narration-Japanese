@@ -42,7 +42,7 @@ export function installDirectionEditor(node){
  const voices=element('section','',root);style(voices,{background:'#151920',padding:'10px',borderRadius:'7px',flexShrink:0});
  element('strong','2. Voice / 読み上げる声',voices);
  const summary=element('div','',voices);style(summary,{whiteSpace:'pre-wrap',margin:'8px 0',overflowY:'auto',maxHeight:'80px',overflowWrap:'anywhere'});
- button('Manual voice / 声を手動で選ぶ・調整',voices,()=>editVoice());
+ button('Voice settings / 声を確認・調整',voices,()=>editVoice());
  const status=element('div','',root);status.setAttribute('role','status');
  let submitting=false;
  const run=button('Run / 実行して読みを確認',root,async()=>{
@@ -96,7 +96,7 @@ export function installDirectionEditor(node){
   brief.placeholder='例：テラフォーマーについて、初心者にも分かる紹介と考察を作って。';
   element('small','Script length / 文数指定がなければ5文で構成。1文だけなどの指定もできます。',d);
   purpose.onchange=()=>{if(purpose.value!=='自由入力')brief.value=purposePresets[purpose.value];};
-  element('p','選んだ項目だけをAIが提案します。「採用」で反映されます。声を自分で選ぶ場合は、ノードの「声を手動で選ぶ・調整」を使います。',d);
+  element('p','選んだ項目だけをAIが提案します。「採用」で反映されます。採用済みの声を確認・変更する場合は、ノードの「声を確認・調整」を使います。',d);
   const local=element('p','',d);local.setAttribute('role','status');
   let propose;
   const draft=element('section','',d);draft.hidden=true;

@@ -58,6 +58,8 @@ Enable the separate reference node and upload suitable reference speech to use i
 4. Run, approve the original text and readings, then generate. / 実行し、原文と読みを承認してから生成します。
 5. Play and save full audio or individual sentences in the final scrolling list. / 最後のスクロール一覧で全体・台詞別の音声を再生・保存します。
 
+For a fully manual start, use Edit script → Voice settings → Run and review readings; this route does not open AI consultation. / すべて手入力する場合は「台詞を1文ずつ編集」→「声を確認・調整」→「実行して読みを確認」の順に操作し、AI相談は使いません。
+
 ### Consultation draft and adoption / 相談の下書きと採用
 
 Choose whether AI updates both script and voice, only the script, or only the voice; the other item stays unchanged. / AIが更新する対象を「台詞と声」「台詞だけ」「声だけ」から選び、対象外の設定は維持します。
@@ -72,7 +74,7 @@ Consultation status, elapsed time, completion and errors appear at the top even 
 ### Script and voice editing / 台詞と声の編集
 
 Edit script uses one sentence per field, with Add, Remove and Undo. Save updates both the node preview and the generated sentence list. / 台詞編集は1枠1文で、追加・削除・削除の取消ができます。保存するとノードの表示と生成対象の台詞一覧を同時に更新します。
-Manual voice selects your own settings without AI; AI consultation proposes settings from your request. Both update the same adopted voice setting. / 「声を手動で選ぶ・調整」はAIを使わず自分で選ぶ操作、AI相談は希望から設定を提案する操作です。反映先は同じ声設定です。
+Voice settings shows the adopted voice and lets you select or revise it. AI consultation proposes settings from your request; applying the proposal makes it the adopted voice. / 「声を確認・調整」は採用済みの声を表示し、選択・変更できます。AI相談は希望から設定を提案し、提案を採用するとその声が採用済みの声になります。
 Edit voice offers model, character and tone presets; choosing Custom tone reveals a shared voice/tone text field. Seed controls are under Advanced. / 声の編集ではモデル・キャラクター・口調のプリセットを選べます。口調の「自由入力」で声質・口調の文章欄を表示します。候補番号は詳細設定へまとめています。
 Run uses the adopted settings without another AI selection. Older workflows with undecided automatic settings must first adopt an AI proposal or a voice preset. / 実行では採用済みの設定を使い、AIによる再選定は行いません。旧ワークフローの未確定のおまかせ設定は、先にAI提案か声のプリセットを採用してください。
 Original script text is retained; approved readings go to TTS. Reading approval cannot be bypassed. / 原稿は保持し、承認した読みをTTSへ渡します。読み承認は省略できません。
@@ -138,6 +140,8 @@ Pronunciation still requires listening; ASR matching alone does not prove natura
 The initial environment setup was checked with existing compatible environments; a different PC may require CUDA or system-package adjustments. / 初期設定は既存の互換環境を指定して検証しており、別PCではCUDAやシステムパッケージの調整が必要な場合があります。
 
 ## Version / バージョン
+
+v1.1.1: renamed the voice button to “Voice settings / 声を確認・調整” and documented the fully manual route, so an adopted AI voice is clearly an editable current setting, not an additional manual-selection step. / AIが提案して採用した声も現在の設定として確認・変更できることが伝わるよう、声のボタンを「Voice settings / 声を確認・調整」へ変更し、全手入力の手順を記載。
 
 v1.1.0: redesigned draft/adopt consultation, unified sentence/voice editing, targeted progress notifications, the node Run shortcut, normal reading-review cancellation, and current-versus-previous audio result labels. / 相談の下書きと採用、台詞・声の編集、対象を絞った進行通知、ノード上の実行ボタン、通常の読み確認中止、今回・前回の音声結果表示を追加しました。
 
