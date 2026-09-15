@@ -4,7 +4,7 @@ import {scriptBlocks,saveScript} from "./dialogue_blocks.js";
 
 const purposePresets={'解説・紹介':'初心者向けの紹介動画。分かりやすく、親しみのある説明にしたい。','物語・朗読':'情景が伝わる、落ち着いた物語の朗読にしたい。','案内':'要点が明確で聞き取りやすい案内にしたい。','自由入力':''};
 const tonePresets={'標準':'自然で聞き取りやすい日本語のナレーション。','落ち着いた':'落ち着いた口調で、自然な抑揚で話す。','親しみやすい':'親しみやすく、やわらかな口調で話す。','明るい':'明るく軽快な口調で話す。','淡々と':'淡々と、抑揚を控えて明瞭に話す。'};
-const modes={'台詞と声を作る':'compose','台詞だけを作る・直す':'script','声だけを決める':'plan'};
+const modes={'台詞を作る＋声もAIが提案':'compose','台詞を作る・直す（声は変更しない）':'script','声だけ提案（台詞は変更しない）':'plan'};
 const style=(e,s)=>Object.assign(e.style,s);
 function element(tag,text,parent){const e=document.createElement(tag);e.textContent=text||'';parent?.append(e);return e;}
 function button(text,parent,fn){const b=element('button',text,parent);b.type='button';b.onclick=fn;style(b,{padding:'9px 12px',whiteSpace:'normal',cursor:'pointer'});return b;}
@@ -42,7 +42,7 @@ export function installDirectionEditor(node){
  const voices=element('section','',root);style(voices,{background:'#151920',padding:'10px',borderRadius:'7px',flexShrink:0});
  element('strong','2. Voice / 読み上げる声',voices);
  const summary=element('div','',voices);style(summary,{whiteSpace:'pre-wrap',margin:'8px 0',overflowY:'auto',maxHeight:'80px',overflowWrap:'anywhere'});
- button('Edit voice / 声をプリセットから選ぶ・調整',voices,()=>editVoice());
+ button('Manual voice / 声を手動で選ぶ・調整',voices,()=>editVoice());
  const status=element('div','',root);status.setAttribute('role','status');
  element('small','Run → review readings → generate / 「実行」→読みの確認→音声生成',root);
  const widget=node.addDOMWidget('narration_editor','div',root,{serialize:false,hideOnZoom:false,getMinHeight:()=>580,getMaxHeight:()=>580,getHeight:()=>580});
@@ -81,12 +81,13 @@ export function installDirectionEditor(node){
  function consult(){
   const initial=snapshot(),original=text(),d=modal('AI consultation / 台詞と声を相談して作る');
   style(d,{margin:'180px auto 24px',maxHeight:'calc(100vh - 204px)'});
-  const target=select('Create / AIに作ってもらうもの',d,Object.keys(modes),'台詞と声を作る');
+  const target=select('Create / AIに作ってもらうもの',d,Object.keys(modes),'台詞を作る＋声もAIが提案');
   const purpose=select('Purpose / 用途の例',d,Object.keys(purposePresets),'自由入力');
   const brief=input('Request / 作りたい内容・希望',d,props().narrationBrief||value('purpose')||'');
-  brief.placeholder='例：初心者向けに、この動画の紹介台詞を5行作って。やさしい声で。';
+  brief.placeholder='例：テラフォーマーについて、初心者にも分かる紹介と考察を作って。';
+  element('small','Script length / 文数指定がなければ5文で構成。1文だけなどの指定もできます。',d);
   purpose.onchange=()=>{if(purpose.value!=='自由入力')brief.value=purposePresets[purpose.value];};
-  element('p','AIの提案は下書きです。「採用」を押すまで現在の台詞・声は変わりません。',d);
+  element('p','選んだ項目だけをAIが提案します。「採用」で反映されます。声を自分で選ぶ場合は、ノードの「声を手動で選ぶ・調整」を使います。',d);
   const local=element('p','',d);local.setAttribute('role','status');
   let propose;
   const draft=element('section','',d);draft.hidden=true;

@@ -62,7 +62,9 @@ Enable the separate reference node and upload suitable reference speech to use i
 
 ### Consultation draft and adoption / 相談の下書きと採用
 
-Choose Script and voice, Script only, or Voice only in the consultation dialog. / 相談の小窓で「台詞と声」「台詞だけ」「声だけ」を選びます。
+Choose whether AI updates both script and voice, only the script, or only the voice; the other item stays unchanged. / AIが更新する対象を「台詞と声」「台詞だけ」「声だけ」から選び、対象外の設定は維持します。
+Without a sentence count, a new script defaults to five sentences with an introduction, concrete explanation and conclusion; explicit counts take priority. A deficient draft gets one automatic correction attempt. / 文数指定がなければ、新規原稿は導入・具体的な説明・まとめを含む5文を基本にし、明示した文数を優先します。文数などが不適合なら一度だけ自動で修正を求めます。
+A final editorial pass expands weak drafts and removes unsupported assumptions about named works, settings and recent events. This uses the local model, not external source verification. / 下書きの後に校閲を行い、内容不足や、未指定の作品・設定・最近の動向の推測を見直します。ローカルモデルによる校閲であり、外部資料の照合ではありません。
 For example, ask for five lines of narration. The proposal shows editable lines and voice settings; Apply transfers them to the node's sentence list and voice settings together. / 例えば「ナレーションを5行作って」と相談すると、編集できる台詞と声の提案を表示します。採用すると台詞一覧と声の設定へまとめて反映します。
 Purpose examples are available inside the consultation dialog; there is no separate permanent purpose field on the node. / 用途の例は相談の小窓で選べます。ノード上に独立した用途入力欄は置きません。
 The proposal is a draft until adopted. Cancelling leaves existing inputs intact. / 提案は採用するまで下書きです。キャンセルしても元の入力は変わりません。
@@ -72,6 +74,7 @@ Consultation status, elapsed time, completion and errors appear at the top even 
 ### Script and voice editing / 台詞と声の編集
 
 Edit script uses one sentence per field, with Add, Remove and Undo. Save updates both the node preview and the generated sentence list. / 台詞編集は1枠1文で、追加・削除・削除の取消ができます。保存するとノードの表示と生成対象の台詞一覧を同時に更新します。
+Manual voice selects your own settings without AI; AI consultation proposes settings from your request. Both update the same adopted voice setting. / 「声を手動で選ぶ・調整」はAIを使わず自分で選ぶ操作、AI相談は希望から設定を提案する操作です。反映先は同じ声設定です。
 Edit voice offers model, character and tone presets; choosing Custom tone reveals a shared voice/tone text field. Seed controls are under Advanced. / 声の編集ではモデル・キャラクター・口調のプリセットを選べます。口調の「自由入力」で声質・口調の文章欄を表示します。候補番号は詳細設定へまとめています。
 Run uses the adopted settings without another AI selection. Older workflows with undecided automatic settings must first adopt an AI proposal or a voice preset. / 実行では採用済みの設定を使い、AIによる再選定は行いません。旧ワークフローの未確定のおまかせ設定は、先にAI提案か声のプリセットを採用してください。
 Original script text is retained; approved readings go to TTS. Reading approval cannot be bypassed. / 原稿は保持し、承認した読みをTTSへ渡します。読み承認は省略できません。
