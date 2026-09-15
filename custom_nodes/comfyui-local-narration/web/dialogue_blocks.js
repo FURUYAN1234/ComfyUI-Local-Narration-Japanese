@@ -15,7 +15,7 @@ function show(node){
  const help=add('p','1枠に1文。＋／－で追加・削除し、入力後は戻って通常の「実行」を押します。生成直前に読みの承認窓が開きます。 / One sentence per field; Run after editing, then approve readings.');Object.assign(help.style,{fontSize:'12px',margin:'4px 0 8px'});
  const list=add('div');Object.assign(list.style,{overflowY:'auto',flex:'1',minHeight:0});
  const status=add('p');status.setAttribute('role','status');Object.assign(status.style,{color:'#fbbf24',fontSize:'12px',margin:'6px 0',maxHeight:'32px',overflow:'auto'});
- const footer=add('div');Object.assign(footer.style,{display:'flex',flexWrap:'wrap',gap:'10px'});
+ const footer=add('div');Object.assign(footer.style,{display:'flex',flexWrap:'wrap',justifyContent:'flex-end',gap:'10px'});
  
  const button=(name,fn,parent)=>{const b=add('button',name,parent);b.type='button';Object.assign(b.style,{padding:'6px',fontSize:'12px'});b.onclick=fn;return b;};
  function render(){list.replaceChildren();data.blocks.forEach((b,i)=>{
@@ -25,11 +25,12 @@ function show(node){
   const text=add('textarea','',section);text.value=b.text;text.setAttribute('aria-label','台詞ブロック'+(i+1));Object.assign(text.style,{width:'100%',boxSizing:'border-box',minHeight:'85px',fontSize:'16px',margin:'10px 0'});
   text.oninput=()=>{b.text=text.value;data.target='';};
  });undo.disabled=!deleted;}
- button('＋ 台詞を追加 / Add',()=>{if(data.blocks.length>=100){status.textContent='最大100ブロックです。';return;}data.blocks.push({id:crypto.randomUUID(),text:''});render();list.lastElementChild.querySelector('textarea').focus();list.lastElementChild.scrollIntoView({block:'nearest'});},footer);
+ const addButton=button('＋ 台詞を追加 / Add',()=>{if(data.blocks.length>=100){status.textContent='最大100ブロックです。';return;}data.blocks.push({id:crypto.randomUUID(),text:''});render();list.lastElementChild.querySelector('textarea').focus();list.lastElementChild.scrollIntoView({block:'nearest'});},footer);
  const undo=button('削除を戻す / Undo remove',()=>{if(!deleted)return;data.blocks.splice(deleted.index,0,deleted.block);deleted=null;render();},footer);
  const close=()=>{dialog.close();dialog.remove();editors.delete(node.id);};
- button('Cancel and return / 変更を破棄して戻る',close,footer);
- button('Save and return / 入力を保存して戻る',()=>{if(data.blocks.some(b=>!b.text.trim())){status.textContent='空欄へ台詞を入力するか、－で削除してください。';return;}const normalized=normalize(data);if(normalized.blocks.length>100){status.textContent='最大100文です。';return;}if(normalized.blocks.length!==data.blocks.length){data=normalized;render();status.textContent='複数の文を1文ずつに分けました。内容を確認して、もう一度「戻る」を押してください。';return;}saveScript(node,data);close();},footer);
+ const cancelButton=button('Cancel / キャンセル（変更を破棄）',close,footer);
+ const saveButton=button('Save / 台詞を保存して戻る',()=>{if(data.blocks.some(b=>!b.text.trim())){status.textContent='空欄へ台詞を入力するか、－で削除してください。';return;}const normalized=normalize(data);if(normalized.blocks.length>100){status.textContent='最大100文です。';return;}if(normalized.blocks.length!==data.blocks.length){data=normalized;render();status.textContent='複数の文を1文ずつに分けました。内容を確認して、もう一度「台詞を保存して戻る」を押してください。';return;}saveScript(node,data);close();},footer);
+ footer.replaceChildren(cancelButton,saveButton,undo,addButton);
  dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  editors.set(node.id,{dialog,render,status});document.body.append(dialog);dialog.showModal();Object.assign(dialog.style,{display:'flex',flexDirection:'column'});render();
 }

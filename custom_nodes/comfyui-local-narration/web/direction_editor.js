@@ -70,7 +70,7 @@ export function installDirectionEditor(node){
   function update(){source.parentElement.hidden=engine.value!=='Qwen'||!!reference();speaker.parentElement.hidden=engine.value!=='Qwen'||source.value!=='用意された声（Qwen）'||!!reference();const design=!(reference()&&engine.value==='Qwen')&&!(engine.value==='Qwen'&&source.value==='用意された声（Qwen）');character.parentElement.hidden=tone.parentElement.hidden=!design;custom.parentElement.hidden=!design||tone.value!=='自由入力';note.textContent=reference()?'参照音声がONです。参照ノードで指定した音声を使います。':'';}
   engine.onchange=source.onchange=tone.onchange=update;character.onchange=()=>{if(character.value==='自由入力')tone.value='自由入力';update();};update();
   const close=()=>{d.close();d.remove();};d.addEventListener('cancel',e=>{e.preventDefault();close();});
-  button('Cancel / 変更を破棄',d,close);
+  button('Cancel / キャンセル（変更を破棄）',d,close);
   button('Apply voice / この声の設定を採用',d,()=>{
    if(snapshot()!==initial){note.textContent='元の入力が変わりました。開き直してください。';return;}
    if(!Number.isFinite(+speed.value)||+speed.value<.5||+speed.value>2||!Number.isInteger(+seed.value)||+seed.value<0||+seed.value>2147483647){note.textContent='話速と候補番号の範囲を確認してください。';return;}
@@ -88,7 +88,7 @@ export function installDirectionEditor(node){
   purpose.onchange=()=>{if(purpose.value!=='自由入力')brief.value=purposePresets[purpose.value];};
   element('p','AIの提案は下書きです。「採用」を押すまで現在の台詞・声は変わりません。',d);
   const local=element('p','',d);local.setAttribute('role','status');
-  const propose=button('Suggest / AIに提案してもらう',d,()=>{});
+  let propose;
   const draft=element('section','',d);draft.hidden=true;
   const script=input('Proposed script / 台詞の提案（1行に1文・編集可）',draft,'');style(script,{minHeight:'170px'});
   const engine=select('Proposed model / 提案モデル',draft,['Irodori','Qwen'],'Irodori');
@@ -96,8 +96,10 @@ export function installDirectionEditor(node){
   const speed=input('Proposed speed / 提案話速',draft,1,'input');speed.type='number';speed.min=.5;speed.max=2;speed.step=.05;
   let alive=true,busy=false,timer,proposedKind,proposedBrief;
   const close=()=>{notify(busy?'cancel':'detach',busy?'相談を閉じました。提案は採用しません / Consultation dismissed':'',d);alive=false;clearInterval(timer);d.close();d.remove();};
-  button('Cancel / 変更を破棄して戻る',d,close);
-  const apply=button('Apply / 提案を台詞・声へ採用',d,()=>{});apply.disabled=true;
+  const footer=element('div','',d);style(footer,{display:'flex',flexWrap:'wrap',justifyContent:'flex-end',gap:'10px',marginTop:'14px'});
+  button('Cancel / キャンセル（変更を破棄）',footer,close);
+  const apply=button('Apply / 提案を台詞・声へ採用',footer,()=>{});apply.disabled=true;
+  propose=button('Suggest / AIに提案してもらう',footer,()=>{});
   const invalidate=()=>{draft.hidden=true;apply.disabled=true;};target.onchange=brief.oninput=invalidate;
   purpose.onchange=()=>{if(purpose.value!=='自由入力')brief.value=purposePresets[purpose.value];invalidate();};
   d.addEventListener('cancel',e=>{e.preventDefault();close();});
