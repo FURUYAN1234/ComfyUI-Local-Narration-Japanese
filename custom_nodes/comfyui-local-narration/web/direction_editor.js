@@ -34,12 +34,12 @@ export function installDirectionEditor(node){
  const notify=(state,message,dialog)=>api.dispatchEvent(new CustomEvent('local_narration.consult_status',{detail:{state,text:message,dialog}}));
  const root=element('div');style(root,{padding:'12px',boxSizing:'border-box',background:'#20242c',color:'#fff',font:'13px/1.55 system-ui',display:'flex',flexDirection:'column',gap:'10px',height:'100%',overflow:'hidden'});
  root.addEventListener('pointerdown',e=>e.stopPropagation());
- button('Consult AI / 作りたい内容をAIに相談',root,()=>consult());
- const scripts=element('section','',root);style(scripts,{background:'#151920',padding:'10px',borderRadius:'7px'});
+ style(button('Consult AI / 作りたい内容をAIに相談',root,()=>consult()),{flexShrink:0});
+ const scripts=element('section','',root);style(scripts,{background:'#151920',padding:'10px',borderRadius:'7px',display:'flex',flexDirection:'column',flex:'1 1 0',minHeight:'130px'});
  const scriptTitle=element('strong','',scripts);
- const preview=element('div','',scripts);style(preview,{whiteSpace:'pre-wrap',overflowY:'auto',maxHeight:'106px',margin:'8px 0',overflowWrap:'anywhere'});
- button('Edit script / 台詞を1文ずつ編集（＋／－）',scripts,()=>node.narrationEditSentences?.());
- const voices=element('section','',root);style(voices,{background:'#151920',padding:'10px',borderRadius:'7px'});
+ const preview=element('div','',scripts);style(preview,{whiteSpace:'pre-wrap',overflowY:'auto',flex:'1 1 0',minHeight:0,margin:'8px 0',overflowWrap:'anywhere'});
+ style(button('Edit script / 台詞を1文ずつ編集（＋／－）',scripts,()=>node.narrationEditSentences?.()),{flexShrink:0});
+ const voices=element('section','',root);style(voices,{background:'#151920',padding:'10px',borderRadius:'7px',flexShrink:0});
  element('strong','2. Voice / 読み上げる声',voices);
  const summary=element('div','',voices);style(summary,{whiteSpace:'pre-wrap',margin:'8px 0',overflowY:'auto',maxHeight:'80px',overflowWrap:'anywhere'});
  button('Edit voice / 声をプリセットから選ぶ・調整',voices,()=>editVoice());
