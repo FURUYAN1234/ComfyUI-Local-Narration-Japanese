@@ -108,6 +108,9 @@ class NarrationDirection:
    if chosen=='reference':p['_reference_audio']=reference
    notify(unique_id,'complete','音声企画完了 / '+p['engine'])
    return (p,shown)
+  except mm.InterruptProcessingException:
+   notify(unique_id,'cancelled','読み確認・音声生成をキャンセルしました / Cancelled',terminal=True)
+   raise
   except Exception:
    notify(unique_id,'error','音声企画エラー / 実行結果を確認');raise
 
@@ -136,12 +139,15 @@ class NarrationGenerate:
  @classmethod
  def IS_CHANGED(cls,**kwargs):return float("nan")
  def generate(self,plan,unique_id=None,review_readings=True,**options):
-  # Public execution always requires approval; all clients receive failures including review cancellation.
+  # Keep approval mandatory and distinguish a normal user cancellation from failure.
   try:
    if plan.get('dialogue_blocks'):return self.generate_blocks(plan,unique_id,True,options)
    notify(unique_id,'running','台詞と読みの確認待ち / Review readings')
    approved=review(dict(plan),unique_id)
    return self._generate_audio(approved,unique_id=unique_id,review_readings=False,**options)
+  except mm.InterruptProcessingException:
+   notify(unique_id,'cancelled','読み確認・音声生成をキャンセルしました / Cancelled',terminal=True)
+   raise
   except Exception:
    notify(unique_id,'error','音声生成を終了しました。中止またはエラーを確認してください / Stopped',terminal=True)
    raise
@@ -229,6 +235,9 @@ class NarrationPlayback:
  def save(self,audio,details,unique_id=None):
   notify(unique_id,'running','全体音声を保存中 / Saving audio')
   try:return self._save(audio,details,unique_id)
+  except mm.InterruptProcessingException:
+   notify(unique_id,'cancelled','読み確認・音声生成をキャンセルしました / Cancelled',terminal=True)
+   raise
   except Exception:
    notify(unique_id,'error','音声保存に失敗しました / Audio save failed',terminal=True)
    raise

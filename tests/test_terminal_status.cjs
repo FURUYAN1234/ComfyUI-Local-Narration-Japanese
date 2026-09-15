@@ -9,5 +9,6 @@ emit({state:'complete',terminal:true,text:'音声保存完了'});assert.equal(in
 tick();tick();assert.equal(panel.textContent,final);assert.equal(panel.dataset.state,'complete');
 emit({state:'complete',text:'遅れた中間通知'});tick();assert.equal(panel.textContent,final,'late intermediate completion cannot restart timer');
 emit({state:'running',text:'次の生成'});assert.equal(intervals.size,1);emit({state:'error',terminal:true,text:'中止'});assert.equal(intervals.size,0);
+emit({state:'running',text:'読み確認中'});emit({state:'cancelled',terminal:true,text:'キャンセルしました'});assert.equal(intervals.size,0);assert.equal(panel.dataset.state,'cancelled');const cancelled=panel.textContent;handlers.execution_interrupted();tick();assert.equal(panel.textContent,cancelled);assert(!panel.textContent.includes('✅'));
 emit({state:'running',text:'再接続前'});handlers.reconnecting();assert.equal(intervals.size,0);
 console.log('PASS receiving client: intermediate completion continues; targeted terminal stops timer without executed/execution_success; late intermediate ignored; error/disconnect stop');

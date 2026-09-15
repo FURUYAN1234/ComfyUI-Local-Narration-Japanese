@@ -26,7 +26,7 @@ app.registerExtension({name:"LocalNarration.Controls",nodeCreated(node){
 }});
 api.addEventListener("local_narration.status",({detail:d})=>{
  const node=app.graph.getNodeById(d.node);if(!node)return;
- if(node.comfyClass!=="LocalNarrationDirection")node.title=(d.state==="complete"?"✅ ":d.state==="error"?"⚠️ ":"⏳ ")+d.text;
+ if(node.comfyClass!=="LocalNarrationDirection")node.title=(d.state==="complete"?"✅ ":d.state==="cancelled"?"↩ ":d.state==="error"?"⚠️ ":"⏳ ")+d.text;
  node.color=d.state==="complete"?"#254d35":d.state==="error"?"#653232":"#34445b";
  app.graph.setDirtyCanvas(true,true);
 });

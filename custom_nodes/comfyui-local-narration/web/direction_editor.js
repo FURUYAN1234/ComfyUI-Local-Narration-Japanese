@@ -44,12 +44,21 @@ export function installDirectionEditor(node){
  const summary=element('div','',voices);style(summary,{whiteSpace:'pre-wrap',margin:'8px 0',overflowY:'auto',maxHeight:'80px',overflowWrap:'anywhere'});
  button('Manual voice / 声を手動で選ぶ・調整',voices,()=>editVoice());
  const status=element('div','',root);status.setAttribute('role','status');
+ let submitting=false;
+ const run=button('Run / 実行して読みを確認',root,async()=>{
+  if(submitting||!text().trim()||!ready())return;
+  submitting=true;sync();
+  let failure;
+  try{await app.queuePrompt(0,1);}catch(e){failure=e;}
+  finally{submitting=false;sync();if(failure)status.textContent='実行できませんでした：'+failure.message;}
+ });style(run,{flexShrink:0,background:'#166534',color:'#fff'});
  element('small','Run → review readings → generate / 「実行」→読みの確認→音声生成',root);
- const widget=node.addDOMWidget('narration_editor','div',root,{serialize:false,hideOnZoom:false,getMinHeight:()=>580,getMaxHeight:()=>580,getHeight:()=>580});
- widget.options ||= {};widget.options.serialize=false;widget.computeSize=()=>[460,580];
+ const widget=node.addDOMWidget('narration_editor','div',root,{serialize:false,hideOnZoom:false,getMinHeight:()=>630,getMaxHeight:()=>630,getHeight:()=>630});
+ widget.options ||= {};widget.options.serialize=false;widget.computeSize=()=>[460,630];
  function sync(){
   for(const w of node.widgets){if(w===widget)continue;if(!w._narrationHidden){w._narrationHidden=true;w.hidden=true;w.computeSize=()=>[0,-4];if(w.computeLayoutSize)w.computeLayoutSize=()=>({minHeight:0,maxHeight:0,minWidth:0});}if(w.inputEl){w.inputEl.style.display='none';const c=w.inputEl.parentElement?.querySelector('.narration-caption');if(c)c.style.display='none';}}
   const t=text(),count=t.trim()?scriptBlocks(t).length:0;
+  run.disabled=submitting||!count||!ready();
   scriptTitle.textContent='1. Script / 採用済みの台詞 '+count+'件';preview.textContent=t||'台詞はまだありません。AIに相談するか、編集から入力してください。';
   summary.textContent=ready()?(value('engine')==='おまかせ'?'Irodori':value('engine'))+' · '+(value('speed')||1)+'倍\n'+(reference()?'参照音声を使用':value('voice_mode')==='用意された声（Qwen）'?'話者：'+value('speaker'):[value('character')==='自由指定'?'':value('character'),value('style')||'自然で聞き取りやすいナレーション'].filter(Boolean).join(' / ')):'声は未確定です。AIに相談するか、プリセットから選んでください。';
   status.textContent=!count?'台詞を入力してください。':!ready()?'声の設定を確定してください。':'台詞と声を確認できたら「実行」へ。';

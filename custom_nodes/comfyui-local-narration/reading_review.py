@@ -28,7 +28,7 @@ def review(plan,node):
  initial=[memory.get(text,reading) for text,reading in zip(rows,initial)]
  rid=uuid.uuid4().hex
  payload={'request_id':rid,'rows':rows,'readings':initial,'engine':plan['engine'],'remembered':memory,'node':str(node)}
- s={'payload':payload,'event':threading.Event(),'result':None}
+ s={'payload':payload,'event':threading.Event(),'result':None,'client_id':PromptServer.instance.client_id}
  with LOCK:SESSIONS[rid]=s
  server=PromptServer.instance;server.send_sync('local_narration.reading_review',payload,server.client_id)
  try:
@@ -37,14 +37,15 @@ def review(plan,node):
    mm.throw_exception_if_processing_interrupted()
    if time.monotonic()>deadline:raise RuntimeError('読み確認が30分以内に完了しなかったため中止しました。')
   mm.throw_exception_if_processing_interrupted()
-  if s['result'].get('cancelled'):raise RuntimeError('読み確認で音声生成を中止しました。')
+  if s['result'].get('cancelled'):raise mm.InterruptProcessingException()
   p=dict(plan);p['original_text']=plan['text'];p['text']='\n'.join(s['result']['readings']);p['reading_review']={'rows':rows,'readings':s['result']['readings']}
   return p
  finally:
   with LOCK:SESSIONS.pop(rid,None)
 @PromptServer.instance.routes.get('/local-narration/reading-review/pending')
 async def pending(request):
- with LOCK:items=[s['payload'] for s in SESSIONS.values() if s['result'] is None]
+ client_id=request.query.get('client_id')
+ with LOCK:items=[s['payload'] for s in SESSIONS.values() if client_id and s.get('client_id')==client_id and s['result'] is None]
  return web.json_response({'pending':items},headers={'Cache-Control':'no-store'})
 @PromptServer.instance.routes.post('/local-narration/reading-review/submit')
 async def submit(request):

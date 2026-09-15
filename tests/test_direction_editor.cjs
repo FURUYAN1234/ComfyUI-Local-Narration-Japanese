@@ -5,8 +5,8 @@ class E{
  replaceChildren(...es){this.children=[];es.forEach(e=>this.append(e));}querySelectorAll(t){return this.children.flatMap(e=>[...(e.tag===t?[e]:[]),...e.querySelectorAll(t)]);}querySelector(t){return this.children.find(e=>e.tag===t);}
  get lastElementChild(){return this.children.at(-1);}showModal(){}close(){}remove(){this.removed=true;}focus(){}scrollIntoView(){}
 }
-const body=new E('body'),events=[],requests=[];let resolveFetch,ext;
-const ctx={document:{body,createElement:t=>new E(t)},app:{graph:{setDirtyCanvas(){},links:{}},registerExtension:e=>ext=e},api:{dispatchEvent:e=>events.push(e.detail),fetchApi:(url,o)=>{requests.push(JSON.parse(o.body));return new Promise(r=>resolveFetch=r);}},CustomEvent:class{constructor(type,o){this.detail=o.detail;}},crypto:require('crypto').webcrypto,Map,Date,queueMicrotask:f=>f(),setInterval:()=>1,clearInterval(){}};
+const body=new E('body'),events=[],requests=[];let resolveFetch,ext;const queued=[];
+const ctx={document:{body,createElement:t=>new E(t)},app:{queuePrompt:async(...args)=>queued.push(args),graph:{setDirtyCanvas(){},links:{}},registerExtension:e=>ext=e},api:{dispatchEvent:e=>events.push(e.detail),fetchApi:(url,o)=>{requests.push(JSON.parse(o.body));return new Promise(r=>resolveFetch=r);}},CustomEvent:class{constructor(type,o){this.detail=o.detail;}},crypto:require('crypto').webcrypto,Map,Date,queueMicrotask:f=>f(),setInterval:()=>1,clearInterval(){}};
 vm.createContext(ctx);const base=process.argv[2];
 for(const f of ['dialogue_blocks.js','direction_editor.js'])vm.runInContext(fs.readFileSync(base+f,'utf8').replace(/^import .*;\n/gm,'').replace(/export function /g,'function '),ctx);
 const vals={text:'元の台詞。',dialogue_blocks:'',purpose:'紹介',mode:'AIおまかせ',engine:'おまかせ',voice_mode:'デザイン',speaker:'Ono_anna',character:'自由指定',style:'',speed:0,seed:42};
@@ -28,6 +28,7 @@ assert(all(node.panel).some(e=>e.textContent.includes('声は未確定')));
  find(d,'Apply script and voice / 台詞一覧と声へ採用').onclick();
  const blocks=JSON.parse(get('dialogue_blocks').value).blocks;assert.equal(blocks.length,5);assert.equal(blocks[0].text,'編集した一行目です。');assert.equal(get('text').value,blocks.map(b=>b.text).join('\n'));assert.equal(get('mode').value,'手動');assert.equal(get('style').value,'穏やかな声');
  assert(all(node.panel).some(e=>e.textContent==='1. Script / 採用済みの台詞 5件'));
+ await find(node.panel,'Run / 実行して読みを確認').onclick();assert.deepEqual(queued,[[0,1]],'node Run must use standard graph queue once');
  node.narrationEditSentences();d=body.children.at(-1);assert.deepEqual(find(d,'Save / 台詞を保存して戻る').parentElement.children.map(e=>e.textContent),['Cancel / キャンセル（変更を破棄）','Save / 台詞を保存して戻る','削除を戻す / Undo remove','＋ 台詞を追加 / Add']);assert.equal(all(d).filter(e=>e.tag==='textarea').length,5);
  field(d,'台詞ブロック1').value='破棄';field(d,'台詞ブロック1').oninput();find(d,'Cancel / キャンセル（変更を破棄）').onclick();assert.equal(JSON.parse(get('dialogue_blocks').value).blocks[0].text,'編集した一行目です。');
  find(node.panel,'Manual voice / 声を手動で選ぶ・調整').onclick();d=body.children.at(-1);

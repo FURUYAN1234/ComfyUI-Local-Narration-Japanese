@@ -1,7 +1,7 @@
 import {app} from "../../scripts/app.js";
 import {api} from "../../scripts/api.js";
 app.registerExtension({name:'LocalNarration.FinalPlayback',nodeCreated(node){if(node.comfyClass!=='LocalNarrationPlayback')return;
- const root=document.createElement('div');Object.assign(root.style,{background:'#17241d',color:'white',padding:'10px',overflowY:'auto',height:'420px',maxHeight:'420px',boxSizing:'border-box'});
+ const root=document.createElement('div');Object.assign(root.style,{background:'#17241d',color:'white',padding:'10px',overflowY:'auto',height:'100%',minHeight:0,boxSizing:'border-box'});
  const render=data=>{
   root.replaceChildren();
   if(!data){root.textContent='After generation: full audio and sentence downloads / 生成後に全体音声と台詞別の再生・保存を表示';return;}
