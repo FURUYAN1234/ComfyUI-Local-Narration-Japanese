@@ -4,6 +4,7 @@ os.environ.update(USE_TF='0',USE_FLAX='0',HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLIN
 import numpy as np
 import soundfile as sf
 import torch
+from audio_join import DEFAULT_PAUSE_MS,join_numpy_audio
 r=Path(__file__).resolve().parent
 config=json.loads((r/'config.json').read_text())
 req=json.loads(Path(sys.argv[1]).read_text())
@@ -47,11 +48,7 @@ else:
   all_audio.append(a);reports.append({'text':part,'seconds':len(a)/sr})
   if mode=='design' and len(parts)>1:
    reference=str(chunk);reference_text=part;mode='reference';del model;gc.collect();torch.cuda.empty_cache();model=load('Base')
-joined=[]
-for i,a in enumerate(all_audio):
- if i:joined.append(np.zeros(round(sr*opt['pause_ms']/1000),dtype=np.float32))
- joined.append(a)
-sf.write(out/'raw.wav',np.concatenate(joined),sr)
+sf.write(out/'raw.wav',join_numpy_audio(all_audio,sr,opt.get('pause_ms',DEFAULT_PAUSE_MS)),sr)
 pitch=2**(opt['pitch_semitones']/12)
 filters=[f'asetrate={sr}*{pitch}',f'aresample={sr}',f'atempo={p["speed"]/pitch}',f'volume={opt["volume_db"]}dB']
 subprocess.run(['ffmpeg','-v','error','-nostdin','-y','-i',str(out/'raw.wav'),'-af',','.join(filters),'-ar','48000','-ac','1',str(out/'audio.wav')],check=True)
