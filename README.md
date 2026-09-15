@@ -2,9 +2,7 @@
 
 One ComfyUI workflow for Irodori and Qwen3-TTS, with AI/manual control and pronunciation review. / IrodoriとQwen3-TTSを1本で切り替え、AIおまかせ・手動設定・生成前の読み確認を使えるComfyUIワークフローです。
 
-![Japanese narration / 日本語ナレーション](images/thumbnail.png)
-
-The workflow image in v1.0.0 predates the redesigned local editor. / v1.0.0のワークフロー画像は今回のローカル編集画面の再設計前のものです。
+The workflow uses a compact left-to-right layout: consultation and adopted inputs, generation, then the scrolling audio result list. / ワークフローは、相談・採用済み入力、生成、スクロール式の音声結果一覧を左から右へ並べます。
 
 ## Download / 入手
 
@@ -84,8 +82,9 @@ Reference audio is configured in the separate ON/OFF node. Disable reference aud
 ## Many audio files / 音声が多い場合
 
 Audio bytes stay in the ComfyUI output directory; the workflow retains file references. / 音声の実体はComfyUIのoutputフォルダーへ保存され、ワークフローにはファイルの参照情報を保持します。
-The completed-audio node uses a fixed-height scrolling list for the full track and every sentence, with an MP3 download link for each. / 完成音声ノードは高さを固定したスクロール一覧に全体音声と全台詞を表示し、それぞれのMP3を保存できます。
+The completed-audio node uses the height allocated to its node and scrolls internally for the full track and every sentence, with an MP3 download link for each. / 完成音声ノードは割り当てられたノードの高さを使い、全体音声と全台詞を内部スクロールで表示し、それぞれのMP3を保存できます。
 All sentences stay in the scrolling list; audio loads on playback. / 全台詞をスクロール一覧に保持し、音声は再生時に読み込みます。
+While a new run is waiting for reading approval or generating, retained audio is marked as the previous result. When the new result arrives, the list header changes to the current completed generation and shows its timestamp. / 新しい実行が読み確認待ちまたは生成中は、残っている音声を前回の結果として表示します。新しい結果が届くと、一覧の見出しを今回の生成完了と生成日時へ切り替えます。
 Saving the workflow does not embed or copy audio files. Keep the corresponding output folder when moving to another computer. / ワークフローの保存は音声の埋め込み・コピーを行いません。別PCへ移す場合は対応する出力フォルダーも保持してください。
 
 ## Pronunciation review / 読み確認
@@ -97,7 +96,7 @@ Automatic conversion can misread names or context-dependent words; correct them 
 The memory checkbox saves edited sentence readings locally for reuse. / 記憶チェックで修正した文の読みをローカル保存し、次回に再利用します。
 A confirmation warns that changes after generation starts require a new generation. / 開始前に、開始後の修正は再生成になることを確認します。
 Regeneration may change intonation and duration; previous audio files remain. / 再生成で抑揚や長さが変わる場合があります。元の音声ファイルは残ります。
-Cancel is on the left and Generate on the right. / 中止は左、生成は右に配置しています。
+Cancel is on the left and Generate on the right. Cancelling is a normal interruption: it keeps existing audio and does not report a generation error. / 中止は左、生成は右に配置しています。中止は通常の中断として扱い、既存音声を残し、生成エラーとしては表示しません。
 
 ## Tuning and outputs / 調整と出力
 
@@ -140,7 +139,7 @@ The initial environment setup was checked with existing compatible environments;
 
 ## Version / バージョン
 
-v1.1.0-dev: local redesign of draft/adopt consultation, unified sentence/voice editing and top status; not yet released. / 相談の下書きと採用、台詞・声の編集、上部通知を再設計したローカル版。未公開です。
+v1.1.0: redesigned draft/adopt consultation, unified sentence/voice editing, targeted progress notifications, the node Run shortcut, normal reading-review cancellation, and current-versus-previous audio result labels. / 相談の下書きと採用、台詞・声の編集、対象を絞った進行通知、ノード上の実行ボタン、通常の読み確認中止、今回・前回の音声結果表示を追加しました。
 
 v1.0.0: unified TTS selection, AI/manual control, character menu, reading review and model download. / TTS切替・AI/手動・声キャラメニュー・読み確認・モデル取得を統合。
 Manual input and notifications / 手動入力と通知

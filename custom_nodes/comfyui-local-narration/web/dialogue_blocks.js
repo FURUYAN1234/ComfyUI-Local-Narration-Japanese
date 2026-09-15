@@ -16,7 +16,7 @@ function show(node){
  const list=add('div');Object.assign(list.style,{overflowY:'auto',flex:'1',minHeight:0});
  const status=add('p');status.setAttribute('role','status');Object.assign(status.style,{color:'#fbbf24',fontSize:'12px',margin:'6px 0',maxHeight:'32px',overflow:'auto'});
  const footer=add('div');Object.assign(footer.style,{display:'flex',flexWrap:'wrap',justifyContent:'flex-end',gap:'10px'});
- 
+
  const button=(name,fn,parent)=>{const b=add('button',name,parent);b.type='button';Object.assign(b.style,{padding:'6px',fontSize:'12px'});b.onclick=fn;return b;};
  function render(){list.replaceChildren();data.blocks.forEach((b,i)=>{
   const section=add('section','',list);Object.assign(section.style,{padding:'12px',marginBottom:'12px',background:'#111827',borderRadius:'8px'});
