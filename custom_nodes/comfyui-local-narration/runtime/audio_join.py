@@ -3,7 +3,7 @@ import numpy as np
 
 # A half second is long enough to hear sentence boundaries without slowing a
 # normal narration down noticeably. The node keeps this adjustable.
-DEFAULT_PAUSE_MS = 500
+DEFAULT_PAUSE_MS = 800
 
 
 def silence_samples(sample_rate, pause_ms=DEFAULT_PAUSE_MS):

@@ -16,7 +16,7 @@ ENGINES=['おまかせ','Irodori','Qwen']
 VOICES=['デザイン','用意された声（Qwen）']
 CHARACTERS={'自由指定':'','落ち着いた女性ナレーター':'落ち着いた成人女性。聞き取りやすい標準語で丁寧な解説。','明るい女性ナレーター':'明るく親しみやすい成人女性。自然で軽快な案内。','落ち着いた男性ナレーター':'落ち着いた成人男性。低めの声で丁寧な説明。','元気な男性ナレーター':'元気で親しみやすい成人男性。軽快な口調。','やさしい物語の語り手':'柔らかい成人の声。穏やかなテンポで物語を語る。','元気なアニメキャラクター':'表情豊かで元気な若い成人女性のキャラクター声。','クールなアニメキャラクター':'若い成人男性の落ち着いたキャラクター声。控えめでクールな口調。','落ち着いたニュース調':'成人の中性的な声。明瞭で抑揚を抑えたニュース調。'}
 SPEAKERS=['Ono_anna','Aiden','Dylan','Eric','Ryan','Serena','Sohee','Uncle_fu','Vivian']
-DEFAULT_PAUSE_MS=500
+DEFAULT_PAUSE_MS=800
 def silence_samples(sample_rate,pause_ms=DEFAULT_PAUSE_MS):return max(0,round(sample_rate*max(0,pause_ms)/1000))
 def notify(node,state,text,terminal=False,client_id=...):
  server=PromptServer.instance
@@ -143,7 +143,7 @@ class NarrationGenerate:
    'seed':('INT',{'default':42,'min':0,'max':2147483647}),
    'pitch_semitones':('FLOAT',{'default':0,'min':-6,'max':6,'step':.5,'tooltip':'音程。0で元の声。±12が1オクターブ。'}),
    'volume_db':('FLOAT',{'default':0,'min':-20,'max':6,'step':1}),
-   'pause_ms':('INT',{'default':DEFAULT_PAUSE_MS,'min':0,'max':3000,'step':50,'tooltip':'全体音声で台詞と台詞の間に入れる無音。台詞別MP3には加えません。500msが標準です。'}),
+   'pause_ms':('INT',{'default':DEFAULT_PAUSE_MS,'min':0,'max':3000,'step':50,'tooltip':'全体音声で台詞と台詞の間に入れる無音。台詞別MP3には加えません。800msが標準です。'}),
    'irodori_steps':('INT',{'default':40,'min':1,'max':100}),
    'irodori_text_strength':('FLOAT',{'default':3,'min':0,'max':10,'step':.1}),
    'irodori_style_strength':('FLOAT',{'default':3,'min':0,'max':10,'step':.1}),

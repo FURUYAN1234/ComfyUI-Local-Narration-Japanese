@@ -9,8 +9,8 @@ spec.loader.exec_module(audio_join)
 
 
 def test_default_sentence_silence_is_half_second():
-    assert audio_join.DEFAULT_PAUSE_MS == 500
-    assert audio_join.silence_samples(48000) == 24000
+    assert audio_join.DEFAULT_PAUSE_MS == 800
+    assert audio_join.silence_samples(48000) == 38400
 
 
 def test_join_adds_silence_only_between_sentences():

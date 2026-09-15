@@ -66,7 +66,7 @@ Enable the separate reference node and upload suitable reference speech to use i
 
 For a fully manual start, use Edit script → Voice settings → Run and review readings; this route does not open AI consultation. / すべて手入力する場合は「台詞を1文ずつ編集」→「声を確認・調整」→「実行して読みを確認」の順に操作し、AI相談は使いません。
 
-The generation node has **Sentence silence / 全体音声の台詞間の無音（ms）**. It adds 500 ms of silence between each sentence only in the full narration; individual sentence MP3 files remain unchanged. Increase or decrease it in 50 ms steps to suit the video. / 音声生成ノードの **全体音声の台詞間の無音（ms）** は、全体音声だけで各台詞の間に500msの無音を入れます。台詞別MP3は変わりません。動画に合わせて50ms単位で調整できます。
+The generation node has **Sentence silence / 全体音声の台詞間の無音（ms）**. It adds 800 ms of silence between each sentence only in the full narration; individual sentence MP3 files remain unchanged. Increase or decrease it in 50 ms steps to suit the video. / 音声生成ノードの **全体音声の台詞間の無音（ms）** は、全体音声だけで各台詞の間に800msの無音を入れます。台詞別MP3は変わりません。動画に合わせて50ms単位で調整できます。
 
 ### Consultation draft and adoption / 相談の下書きと採用
 
