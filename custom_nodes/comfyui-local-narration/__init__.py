@@ -16,8 +16,12 @@ ENGINES=['おまかせ','Irodori','Qwen']
 VOICES=['デザイン','用意された声（Qwen）']
 CHARACTERS={'自由指定':'','落ち着いた女性ナレーター':'落ち着いた成人女性。聞き取りやすい標準語で丁寧な解説。','明るい女性ナレーター':'明るく親しみやすい成人女性。自然で軽快な案内。','落ち着いた男性ナレーター':'落ち着いた成人男性。低めの声で丁寧な説明。','元気な男性ナレーター':'元気で親しみやすい成人男性。軽快な口調。','やさしい物語の語り手':'柔らかい成人の声。穏やかなテンポで物語を語る。','元気なアニメキャラクター':'表情豊かで元気な若い成人女性のキャラクター声。','クールなアニメキャラクター':'若い成人男性の落ち着いたキャラクター声。控えめでクールな口調。','落ち着いたニュース調':'成人の中性的な声。明瞭で抑揚を抑えたニュース調。'}
 SPEAKERS=['Ono_anna','Aiden','Dylan','Eric','Ryan','Serena','Sohee','Uncle_fu','Vivian']
-def notify(node,state,text,terminal=False):
- PromptServer.instance.send_sync('local_narration.status',{'node':str(node),'state':state,'text':text,'terminal':terminal})
+def notify(node,state,text,terminal=False,client_id=...):
+ server=PromptServer.instance
+ recipient=server.client_id if client_id is ... else client_id
+ # Match ComfyUI's executed/reading-review recipient; never broadcast another client's result.
+ if recipient:
+  server.send_sync('local_narration.status',{'node':str(node),'state':state,'text':text,'terminal':terminal},recipient)
 _planner_lock=threading.Lock()
 def load_planner():
  spec=importlib.util.spec_from_file_location('local_narration_planner',ROOT/'planner.py')
@@ -209,7 +213,7 @@ class NarrationGenerate:
    item={'id':b['id'],'index':index,'text':b['text'],'filename':name,'subfolder':str(batch.relative_to(folder_paths.get_output_directory())),'type':'output','seconds':audio['waveform'].shape[-1]/audio['sample_rate'],'direction_id':plan['direction_id']}
    outputs.append(item)
    (batch/'blocks.json').write_text(json.dumps(outputs,ensure_ascii=False,indent=2))
-   PromptServer.instance.send_sync('local_narration.block_complete',item)
+   if PromptServer.instance.client_id:PromptServer.instance.send_sync('local_narration.block_complete',item,PromptServer.instance.client_id)
   sr=audios[0]['sample_rate'];chunks=[]
   for a in audios:
    if a['sample_rate']!=sr:raise ValueError('Block sample rates do not match')
@@ -249,16 +253,21 @@ async def download_models(request):
  if _download_lock.locked():return web.json_response({'error':'モデル取得は実行中です。'},status=409)
  if not (ROOT/'config.json').exists():return web.json_response({'error':'READMEの初回セットアップを実行してください。'},status=400)
  async with _download_lock:
-  body=await request.json();node=str(body.get('node',''))
+  body=await request.json();node=str(body.get('node',''));client_id=body.get('client_id')
+  if not isinstance(client_id,str) or not client_id:return web.json_response({'error':'画面を再読み込みしてから再実行してください。'},status=400)
   c=json.loads((ROOT/'config.json').read_text())
   child=await asyncio.create_subprocess_exec(c['python']['Irodori'],'-u',str(ROOT/'download_models.py'),stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.STDOUT)
   lines=[]
   while line:=await child.stdout.readline():
    message=line.decode(errors='replace').strip();lines.append(message)
-   if message.startswith(('Download','Ready','All models')):notify(node,'running',message)
+   if message.startswith(('Download','Ready','All models')):notify(node,'running',message,client_id=client_id)
   code=await child.wait()
-  if code:notify(node,'error','モデル取得失敗 / Retry');return web.json_response({'error':'\n'.join(lines[-15:])},status=500)
-  notify(node,'complete','モデル取得完了 / Models ready',terminal=True);return web.json_response({'ok':True})
+  if code:notify(node,'error','モデル取得失敗 / Retry',client_id=client_id);return web.json_response({'error':'\n'.join(lines[-15:])},status=500)
+  notify(node,'complete','モデル取得完了 / Models ready',terminal=True,client_id=client_id);return web.json_response({'ok':True})
+
+@PromptServer.instance.routes.get('/local-narration/activity')
+async def activity(request):
+ return web.json_response({'busy':_planner_lock.locked() or _download_lock.locked()},headers={'Cache-Control':'no-store'})
 
 @PromptServer.instance.routes.post('/local-narration/consult')
 async def consult(request):

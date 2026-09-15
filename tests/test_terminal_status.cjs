@@ -10,4 +10,4 @@ tick();tick();assert.equal(panel.textContent,final);assert.equal(panel.dataset.s
 emit({state:'complete',text:'遅れた中間通知'});tick();assert.equal(panel.textContent,final,'late intermediate completion cannot restart timer');
 emit({state:'running',text:'次の生成'});assert.equal(intervals.size,1);emit({state:'error',terminal:true,text:'中止'});assert.equal(intervals.size,0);
 emit({state:'running',text:'再接続前'});handlers.reconnecting();assert.equal(intervals.size,0);
-console.log('PASS observer tab: intermediate completion continues; broadcast terminal stops timer without executed/execution_success; late intermediate ignored; error/disconnect stop');
+console.log('PASS receiving client: intermediate completion continues; targeted terminal stops timer without executed/execution_success; late intermediate ignored; error/disconnect stop');

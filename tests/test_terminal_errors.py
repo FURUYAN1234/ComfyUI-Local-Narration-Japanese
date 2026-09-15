@@ -17,4 +17,4 @@ exec(compile(ast.Module(body=[save],type_ignores=[]),'test','exec'),ctx)
 try:ctx['save'](SimpleNamespace(_save=fail),{},'{}',unique_id='4');raise AssertionError('failure swallowed')
 except RuntimeError:pass
 assert events[-1][0][1]=='error' and events[-1][1]['terminal'] is True
-print('PASS review cancellation, block failure, and save failure broadcast terminal error and preserve exception')
+print('PASS review cancellation, block failure, and save failure emit terminal error and preserve exception')
