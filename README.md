@@ -4,6 +4,12 @@ One ComfyUI workflow for Irodori and Qwen3-TTS, with AI/manual control and pronu
 
 The workflow uses a compact left-to-right layout: consultation and adopted inputs, generation, then the scrolling audio result list. / ワークフローは、相談・採用済み入力、生成、スクロール式の音声結果一覧を左から右へ並べます。
 
+## Workflow overview / ワークフロー全体図
+
+![Local Japanese Narration workflow overview / 日本語ナレーションのワークフロー全体図](images/workflow.png)
+
+The first node is where you consult AI or adopt manual script and voice settings; the center node generates after the required reading review; the right node plays and saves the completed audio. / 左の最初のノードでAI相談または手動の台詞・声設定を採用し、中央のノードで必須の読み確認後に生成し、右のノードで完成音声を再生・保存します。
+
 ## Download / 入手
 
 Download the ZIP from [Releases](https://github.com/FURUYAN1234/ComfyUI-Local-Narration-Japanese/releases/latest). / リリースからZIPを入手してください。
