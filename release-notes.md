@@ -1,4 +1,6 @@
-# v1.1.1 — Japanese narration / 日本語ナレーション
+# v1.1.2 — Japanese narration / 日本語ナレーション
+
+Per-sentence MP3 generation now locks a designed voice on the first sentence and uses it as the reference for every later sentence. The narration therefore keeps one speaker and delivery throughout, instead of redesigning the voice per sentence. Qwen built-in speakers and user-provided reference audio stay fixed as before. / 台詞別MP3の生成では、最初の文で決まったデザイン声を後続の全台詞の参照声として使います。文章ごとに声を設計し直さず、ナレーション全体で同じ話者・話し方を維持します。Qwenの用意された話者とユーザー指定の参照音声は従来どおり固定です。
 
 The first node now labels its voice editor “Voice settings / 声を確認・調整” and documents the fully manual route: Edit script → Voice settings → Run and review readings. After applying an AI proposal, this button shows that adopted voice and lets you revise it; it does not require another manual choice. / 最初のノードの声編集ボタンを「Voice settings / 声を確認・調整」へ変更し、「台詞を1文ずつ編集 → 声を確認・調整 → 実行して読みを確認」という全手入力の手順も記載します。AI提案を採用した後は、その採用済みの声を表示・変更でき、改めて手動選択する必要はありません。
 

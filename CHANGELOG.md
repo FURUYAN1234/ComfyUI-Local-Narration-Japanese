@@ -1,5 +1,9 @@
 # Changes / 更新履歴
 
+## v1.1.2
+
+When per-sentence audio is generated from a voice design, retain the first sentence as the voice reference for every later sentence. This keeps one speaker and delivery for the full narration instead of designing a new speaker per sentence. Qwen built-in speakers and user reference audio remain unchanged. / 声デザインで台詞別音声を作るとき、最初の文の音声を後続の全台詞の参照声として使い、文章ごとに別の話者を設計しないよう修正しました。Qwenの用意された話者とユーザー指定の参照音声は従来どおりです。
+
 ## v1.1.1
 
 Renamed the voice button to “Voice settings / 声を確認・調整” and documented the fully manual route, so an adopted AI voice is clearly an editable current setting, not an additional manual-selection step. / AIが提案して採用した声も現在の設定として確認・変更できることが伝わるよう、声のボタンを「Voice settings / 声を確認・調整」へ変更し、全手入力の手順を記載。

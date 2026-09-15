@@ -47,6 +47,25 @@ def block_filename(index,text):
  title=re.sub(r'\s+',' ',title).strip(' .')[:40].rstrip(' .') or '台詞'
  return f'{index:03d}_{title}.mp3'
 
+def requires_voice_anchor(plan):
+ # Voice design creates a voice with the first synthesis. Keep that voice for
+ # every following dialogue block instead of designing another voice per block.
+ return not plan.get('_reference_audio') and (plan['engine']=='Irodori' or (plan['engine']=='Qwen' and plan['voice_mode']=='design'))
+
+def apply_voice_anchor(plan,anchor_path,anchor_text):
+ p=dict(plan)
+ if not anchor_path:return p
+ p['reference']=anchor_path
+ if p['engine']=='Qwen':
+  p['voice_mode']='reference'
+  p['reference_text']=anchor_text
+ return p
+
+def retain_voice_anchor(plan,anchor_path,anchor_text,report,text):
+ if requires_voice_anchor(plan) and anchor_path is None:
+  return json.loads(report)['audio'],text
+ return anchor_path,anchor_text
+
 class NarrationReference:
  @classmethod
  def INPUT_TYPES(cls):
@@ -206,13 +225,15 @@ class NarrationGenerate:
   else:lines=[]
   batch=Path(folder_paths.get_output_directory())/'audio/LocalNarration/Blocks'/(datetime.now().strftime('%Y%m%d%H%M%S')+'_'+uuid.uuid4().hex[:6])
   batch.mkdir(parents=True,exist_ok=False)
-  outputs=[];audios=[];cursor=0
+  outputs=[];audios=[];cursor=0;anchor_path=None;anchor_text='';keep_voice=requires_voice_anchor(p)
   for (index,b),count in zip(selected,counts):
    mm.throw_exception_if_processing_interrupted()
-   part=dict(p);part['text']='\n'.join(lines[cursor:cursor+count]) if review_readings else b['text'];cursor+=count
+   part=apply_voice_anchor(p,anchor_path,anchor_text);part['text']='\n'.join(lines[cursor:cursor+count]) if review_readings else b['text'];cursor+=count
    part['original_text']=b['text'];part.pop('reading_review',None)
    if review_readings:part['reading_review']={'rows':split_rows(b['text']),'readings':part['text'].split('\n')}
    audio,report=self._generate_audio(part,unique_id=node,review_readings=False,**options)
+   if keep_voice:
+    anchor_path,anchor_text=retain_voice_anchor(p,anchor_path,anchor_text,report,part['text'])
    audios.append(audio);name=block_filename(index,b['text']);dest=batch/name
    wav=batch/(dest.stem+'.wav');sf.write(wav,audio['waveform'][0].numpy().T,audio['sample_rate'])
    subprocess.run(['ffmpeg','-v','error','-nostdin','-i',str(wav),'-codec:a','libmp3lame','-b:a','192k',str(dest)],check=True,timeout=120)
