@@ -64,7 +64,7 @@ Enable the separate reference node and upload suitable reference speech to use i
 4. Run, approve the original text and readings, then generate. / 実行し、原文と読みを承認してから生成します。
 5. Play and save full audio or individual sentences in the final scrolling list. / 最後のスクロール一覧で全体・台詞別の音声を再生・保存します。
 
-For a fully manual start, use Edit script → Voice settings → Run and review readings; this route does not open AI consultation. / すべて手入力する場合は「台詞を1文ずつ編集」→「声を確認・調整」→「実行して読みを確認」の順に操作し、AI相談は使いません。
+For a fully manual start, type directly in the adopted-script field or use Edit script → Voice settings → Run and review readings; this route does not open AI consultation. / すべて手入力する場合は、採用済み台詞欄へ直接入力するか「台詞を1文ずつ編集」→「声を確認・調整」→「実行して読みを確認」の順に操作し、AI相談は使いません。
 
 The generation node has **Sentence silence / 全体音声の台詞間の無音（ms）**. It adds 800 ms of silence between each sentence only in the full narration; individual sentence MP3 files remain unchanged. Increase or decrease it in 50 ms steps to suit the video. / 音声生成ノードの **全体音声の台詞間の無音（ms）** は、全体音声だけで各台詞の間に800msの無音を入れます。台詞別MP3は変わりません。動画に合わせて50ms単位で調整できます。
 
@@ -81,7 +81,9 @@ Consultation status, elapsed time, completion and errors appear at the top even 
 
 ### Script and voice editing / 台詞と声の編集
 
-Edit script uses one sentence per field, with Add, Remove and Undo. Save updates both the node preview and the generated sentence list. / 台詞編集は1枠1文で、追加・削除・削除の取消ができます。保存するとノードの表示と生成対象の台詞一覧を同時に更新します。
+Edit script uses one sentence per field, with Add, Remove and removal restore. Save updates both the node preview and the generated sentence list. / 台詞編集は1枠1文で、追加・削除・削除の取消ができます。保存するとノードの表示と生成対象の台詞一覧を同時に更新します。
+The adopted-script field is directly editable. Copy, Paste, Clear, Undo and Redo stay in one compact row; typing, pasting and clearing immediately update the sentence list. Undo/Redo also support Ctrl/Cmd+Z, Ctrl+Y and Ctrl/Cmd+Shift+Z. / 採用済み台詞欄は直接編集できます。コピー・ペースト・クリア・戻す・やり直すを小さな1行にまとめ、入力・貼り付け・クリアは台詞一覧へ即時反映します。戻す・やり直すはCtrl/Cmd+Z、Ctrl+Y、Ctrl/Cmd+Shift+Zにも対応します。
+When the script is empty, the node Run button is disabled and explains that a script is required. Restoring or entering text enables it again. / 台詞が空の間はノードの実行ボタンを無効にし、台詞が必要であることを表示します。文字を入力または戻すと再び実行できます。
 Voice settings shows the adopted voice and lets you select or revise it. AI consultation proposes settings from your request; applying the proposal makes it the adopted voice. / 「声を確認・調整」は採用済みの声を表示し、選択・変更できます。AI相談は希望から設定を提案し、提案を採用するとその声が採用済みの声になります。
 Edit voice offers model, character and tone presets; choosing Custom tone reveals a shared voice/tone text field. Seed controls are under Advanced. / 声の編集ではモデル・キャラクター・口調のプリセットを選べます。口調の「自由入力」で声質・口調の文章欄を表示します。候補番号は詳細設定へまとめています。
 Run uses the adopted settings without another AI selection. Older workflows with undecided automatic settings must first adopt an AI proposal or a voice preset. / 実行では採用済みの設定を使い、AIによる再選定は行いません。旧ワークフローの未確定のおまかせ設定は、先にAI提案か声のプリセットを採用してください。
@@ -148,6 +150,8 @@ Pronunciation still requires listening; ASR matching alone does not prove natura
 The initial environment setup was checked with existing compatible environments; a different PC may require CUDA or system-package adjustments. / 初期設定は既存の互換環境を指定して検証しており、別PCではCUDAやシステムパッケージの調整が必要な場合があります。
 
 ## Version / バージョン
+
+v1.1.4: made the adopted-script area directly editable, added compact copy/paste/clear/undo/redo controls, and disabled the node Run button while the script is empty. / v1.1.4では、採用済み台詞欄を直接編集できるようにし、コピー・ペースト・クリア・戻す・やり直すを追加しました。台詞が空の間はノードの実行ボタンを無効にします。
 
 v1.1.3: full narration now inserts 800 ms of silence between sentences by default. This affects only the combined full track; per-sentence MP3 files are unchanged. Regenerate the narration to apply a changed silence value to audio. / v1.1.3では、全体音声に台詞ごと800msの無音を標準で入れます。台詞別MP3は変わりません。間の設定を変更したあとは、音声を再生成して反映します。
 

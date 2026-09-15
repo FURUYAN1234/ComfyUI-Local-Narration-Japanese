@@ -1,5 +1,9 @@
 # Changes / 更新履歴
 
+## v1.1.4
+
+The adopted-script area is now directly editable with compact Copy, Paste, Clear, Undo and Redo controls. These actions synchronize the sentence list immediately; empty scripts disable the node Run button. / 採用済み台詞欄を直接編集できるようにし、コピー・ペースト・クリア・戻す・やり直すを追加しました。操作は台詞一覧へ即時反映し、台詞が空の間はノードの実行ボタンを無効にします。
+
 ## v1.1.3
 
 Added a named sentence-silence setting to the generation node. Full narration inserts 800 ms between sentences by default, while each sentence MP3 remains unchanged. Existing audio must be regenerated to use a newly selected silence duration. / 音声生成ノードに台詞間無音の設定を追加しました。全体音声だけに標準800msの無音を入れ、台詞別MP3は変更しません。設定を変えた場合は再生成で反映します。

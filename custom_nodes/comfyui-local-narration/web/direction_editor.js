@@ -37,8 +37,32 @@ export function installDirectionEditor(node){
  style(button('Consult AI / 作りたい内容をAIに相談',root,()=>consult()),{flexShrink:0});
  const scripts=element('section','',root);style(scripts,{background:'#151920',padding:'10px',borderRadius:'7px',display:'flex',flexDirection:'column',flex:'1 1 0',minHeight:'130px'});
  const scriptTitle=element('strong','',scripts);
- const preview=element('div','',scripts);style(preview,{whiteSpace:'pre-wrap',overflowY:'auto',flex:'1 1 0',minHeight:0,margin:'8px 0',overflowWrap:'anywhere'});
+ element('small','Editable here / ここでも手入力で加筆・訂正できます（即時反映）',scripts);
+ const toolbar=element('div','',scripts);style(toolbar,{display:'flex',flexWrap:'nowrap',justifyContent:'flex-end',gap:'4px',marginTop:'5px',flexShrink:0});
+ const preview=element('textarea','',scripts);preview.setAttribute('aria-label','Script / 台詞を直接編集');preview.placeholder='台詞を入力、またはペーストしてください。';
+ style(preview,{width:'100%',boxSizing:'border-box',background:'#151920',color:'#fff',border:'1px solid #75808e',borderRadius:'5px',font:'14px/1.6 system-ui',overflowY:'auto',flex:'1 1 0',minHeight:'60px',margin:'8px 0',resize:'none'});
+ let lastScript,composing=false,history=[],historyIndex=-1;
+ const editStatus=element('small','',scripts);editStatus.setAttribute('role','status');
+ const commit=(remember=true)=>{if(remember&&history[historyIndex]!==preview.value){history.splice(historyIndex+1);history.push(preview.value);if(history.length>100)history.shift();historyIndex=history.length-1;}saveScript(node,{blocks:scriptBlocks(preview.value),target:''});lastScript=text();editStatus.textContent='';sync();};
+ preview.oninput=()=>{if(!composing)commit();};
+ preview.addEventListener('compositionstart',()=>{composing=true;});
+ preview.addEventListener('compositionend',()=>{composing=false;commit();});
+ preview.addEventListener('keydown',e=>{
+  e.stopPropagation();if(composing||e.isComposing||!(e.ctrlKey||e.metaKey)||e.altKey)return;
+  const key=e.key.toLowerCase();if(key==='z'||key==='y'){e.preventDefault();moveHistory(key==='y'||e.shiftKey?1:-1);}
+ });
+ function moveHistory(delta){const next=historyIndex+delta;if(composing||next<0||next>=history.length)return;historyIndex=next;preview.value=history[next];commit(false);preview.focus();}
+ button('Copy / コピー',toolbar,async()=>{try{await navigator.clipboard.writeText(preview.value);editStatus.textContent='Copied / コピーしました。';}catch{preview.focus();preview.select();editStatus.textContent='Press Ctrl+C / Ctrl+Cでコピーしてください。';}});
+ button('Paste / ペースト',toolbar,async()=>{
+  const before=preview.value,start=preview.selectionStart,end=preview.selectionEnd;
+  try{const pasted=await navigator.clipboard.readText();if(preview.value!==before){editStatus.textContent='Script changed; retry / 台詞が変わったため、もう一度ペーストしてください。';return;}preview.setRangeText(pasted,start,end,'end');commit();preview.focus();}
+  catch{preview.focus();editStatus.textContent='Press Ctrl+V / Ctrl+Vでペーストしてください。';}
+ });
+ button('Clear / クリア',toolbar,()=>{if(!preview.value)return;preview.value='';commit();preview.focus();});
+ const undo=button('Undo / 戻す',toolbar,()=>moveHistory(-1));
+ const redo=button('Redo / やり直す',toolbar,()=>moveHistory(1));
  style(button('Edit script / 台詞を1文ずつ編集（＋／－）',scripts,()=>node.narrationEditSentences?.()),{flexShrink:0});
+ for(const b of toolbar.children)style(b,{padding:'3px 5px',font:'10px/1.4 system-ui',minHeight:'24px',borderRadius:'0',border:'1px solid #606773',background:'#30363f',color:'#fff',boxShadow:'none',appearance:'none',whiteSpace:'nowrap'});
  const voices=element('section','',root);style(voices,{background:'#151920',padding:'10px',borderRadius:'7px',flexShrink:0});
  element('strong','2. Voice / 読み上げる声',voices);
  const summary=element('div','',voices);style(summary,{whiteSpace:'pre-wrap',margin:'8px 0',overflowY:'auto',maxHeight:'80px',overflowWrap:'anywhere'});
@@ -59,9 +83,13 @@ export function installDirectionEditor(node){
   for(const w of node.widgets){if(w===widget)continue;if(!w._narrationHidden){w._narrationHidden=true;w.hidden=true;w.computeSize=()=>[0,-4];if(w.computeLayoutSize)w.computeLayoutSize=()=>({minHeight:0,maxHeight:0,minWidth:0});}if(w.inputEl){w.inputEl.style.display='none';const c=w.inputEl.parentElement?.querySelector('.narration-caption');if(c)c.style.display='none';}}
   const t=text(),count=t.trim()?scriptBlocks(t).length:0;
   run.disabled=submitting||!count||!ready();
-  scriptTitle.textContent='1. Script / 採用済みの台詞 '+count+'件';preview.textContent=t||'台詞はまだありません。AIに相談するか、編集から入力してください。';
+  style(run,{background:run.disabled?'#444b55':'#166534',color:run.disabled?'#aab0b8':'#fff',cursor:run.disabled?'not-allowed':'pointer'});
+  run.title=!count?'台詞が空のため実行できません。':'';
+  scriptTitle.textContent='1. Script / 採用済みの台詞 '+count+'件';if(t!==lastScript&&!composing){preview.value=t;lastScript=t;history=[t];historyIndex=0;}
+  undo.disabled=composing||historyIndex<=0;redo.disabled=composing||historyIndex>=history.length-1;
+  for(const b of [undo,redo])style(b,{opacity:b.disabled?'.45':'1',cursor:b.disabled?'not-allowed':'pointer'});
   summary.textContent=ready()?(value('engine')==='おまかせ'?'Irodori':value('engine'))+' · '+(value('speed')||1)+'倍\n'+(reference()?'参照音声を使用':value('voice_mode')==='用意された声（Qwen）'?'話者：'+value('speaker'):[value('character')==='自由指定'?'':value('character'),value('style')||'自然で聞き取りやすいナレーション'].filter(Boolean).join(' / ')):'声は未確定です。AIに相談するか、プリセットから選んでください。';
-  status.textContent=!count?'台詞を入力してください。':!ready()?'声の設定を確定してください。':'台詞と声を確認できたら「実行」へ。';
+  status.textContent=!count?'実行不可：台詞を入力してください。':!ready()?'声の設定を確定してください。':'台詞と声を確認できたら「実行」へ。';
  }
  function editVoice(){
   const initial=snapshot(),d=modal('Voice settings / 読み上げる声を決める');
