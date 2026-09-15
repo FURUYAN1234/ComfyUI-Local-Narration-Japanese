@@ -168,3 +168,6 @@ Manual dialogue uses the sentence dialog only; Cancel discards edits and Save co
 Progress, elapsed seconds and completion appear at the top of the screen. / 画面上部に進行状況・経過秒数・完了通知を表示します。
 
 AI consultation also shows status and elapsed time at the top of the screen while its dialog is open; proposal completion and errors appear there too. / AI相談の小窓を開いている間も、画面上部に状況と経過時間を表示し、提案完了・エラーも通知します。
+
+
+v1.1.5: AI consultation waits for the LM Studio API and model readiness instead of waiting for the CLI command to exit; an idle retained model is reused. / v1.1.5では、AI相談時にLM Studio CLIの終了を待たず、APIとモデルの準備完了を確認します。待機中でない既存モデルは再利用します。

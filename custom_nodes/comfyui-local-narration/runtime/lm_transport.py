@@ -1,4 +1,4 @@
-import json,os,socket,struct,subprocess,urllib.request,shutil
+import json,os,socket,struct,subprocess,urllib.request,shutil,time
 from pathlib import Path
 def endpoint():
  if os.environ.get('LOCAL_NARRATION_LM_ENDPOINT'):return os.environ['LOCAL_NARRATION_LM_ENDPOINT'].rstrip('/')
@@ -29,3 +29,30 @@ def cli(*args,timeout=180):
 def api(base,path,data=None,timeout=180):
  req=urllib.request.Request(base+path,data=None if data is None else json.dumps(data,ensure_ascii=False).encode(),headers={'Content-Type':'application/json'})
  with urllib.request.urlopen(req,timeout=timeout) as response:return json.load(response)
+def start_server(base):
+ host=base.split('//',1)[-1].rsplit(':',1)[0]
+ subprocess.Popen([cli_path(),'server','start','--port','1234','--bind',host],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
+def wait_for_api(base,timeout=60):
+ deadline=time.monotonic()+timeout;last=None
+ while time.monotonic()<deadline:
+  try:return api(base,'/v1/models',timeout=5)
+  except OSError as e:last=e;time.sleep(.5)
+ raise RuntimeError('LM Studio APIを起動できませんでした。LM Studioのローカルサーバー設定を確認してください。') from last
+def model(identifier):
+ data=json.loads(cli('ps','--json',timeout=15))
+ return next((item for item in data if item.get('identifier')==identifier),None)
+def load_model(model_key,identifier):
+ subprocess.Popen([cli_path(),'load',model_key,'--gpu','max','--context-length','4096','--parallel','1','--ttl','300','--identifier',identifier,'--yes'],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
+ deadline=time.monotonic()+180
+ while time.monotonic()<deadline:
+  ready=model(identifier)
+  if ready:return ready
+  time.sleep(.5)
+ raise RuntimeError('LM Studioの音声監督LLMを読み込めませんでした。')
+def unload_model(identifier):
+ subprocess.Popen([cli_path(),'unload',identifier],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
+ deadline=time.monotonic()+60
+ while time.monotonic()<deadline:
+  if not model(identifier):return
+  time.sleep(.5)
+ raise RuntimeError('LM Studioの音声監督LLMを解放できませんでした。')

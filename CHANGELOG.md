@@ -1,3 +1,7 @@
+## v1.1.5
+
+- Wait for LM Studio API and model readiness without blocking on `lms server start` or `lms load`; an idle retained model is reused. / `lms server start` と `lms load` の終了待ちをせず、LM StudioのAPI・モデル準備完了を確認します。待機中でない既存モデルは再利用します。
+
 # Changes / 更新履歴
 
 ## v1.1.4
