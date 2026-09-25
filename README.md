@@ -31,7 +31,9 @@ Manual mode does not use LM Studio. / 手動モードではLM Studioを使いま
 Download the LLM inside LM Studio before using AI mode. / AI利用前にLM Studio側でLLMを取得してください。
 `LOCAL_NARRATION_LMS_CLI` can point to the CLI, and `LOCAL_NARRATION_LM_ENDPOINT` can override the API URL. / CLIの場所とAPI接続先は左記の環境変数で指定できます。
 Windows LM Studio is detected from its standard installation on WSL. / WSLではWindows版LM Studioの標準配置を検出します。
-Gemini generation requires a Gemini API key and uses the paid cloud API, but key registration is optional when using local Irodori or Qwen. The optional API button is the first control in the narration node. Saving a verified key closes the dialog automatically; the key is kept only in the running ComfyUI process memory and is never written to the workflow, output JSON or log. / Gemini生成にはGemini APIキーと有料クラウドAPIが必要ですが、ローカルのIrodori・Qwenだけを使う場合、API登録は不要です。任意のAPI登録ボタンは音声企画ノードの最初に表示されます。認証して保存すると入力窓は自動で閉じ、キーは動作中のComfyUIプロセスのメモリだけに保持され、ワークフロー・出力JSON・ログへ保存されません。
+Gemini generation requires a Gemini API key and uses a cloud API for which charges may apply, but key registration is optional when using local Irodori or Qwen. The optional API button is the first control in the narration node. Saving a verified key closes the dialog automatically; the key is kept only in the running ComfyUI process memory and is never written to the workflow, output JSON or log. / Gemini生成にはGemini APIキーが必要で、クラウドAPIの利用料金が発生する場合がありますが、ローカルのIrodori・Qwenだけを使う場合、API登録は不要です。任意のAPI登録ボタンは音声企画ノードの最初に表示されます。認証して保存すると入力窓は自動で閉じ、キーは動作中のComfyUIプロセスのメモリだけに保持され、ワークフロー・出力JSON・ログへ保存されません。
+
+When Gemini TTS is selected, the narration text, voice/style instructions and generation settings are sent to the Gemini API. Do not submit sensitive, confidential or personal information through unpaid Gemini services; Google states that unpaid-service inputs and outputs may be used for product improvement and reviewed by humans, while paid-service data handling differs. Review the current Gemini API terms before use. / Gemini TTSを選ぶと、原稿・声や口調の指示・生成設定がGemini APIへ送信されます。Googleは、無償サービスの入出力を製品改善に利用し、人手で確認する場合があるため、機密情報・個人情報を無償サービスへ送信しないよう案内しています。有償サービスではデータの扱いが異なります。利用前に最新のGemini API規約を確認してください。
 
 ## Install / 導入
 
@@ -146,6 +148,7 @@ Integration code: Apache-2.0. / 連携コードはApache-2.0です。
 - [Irodori-TTS v4.1-Small](https://huggingface.co/Aratako/Irodori-TTS-v4.1-Small): MIT; follow the model card's additional usage restrictions, including consent for impersonation. / MIT。なりすましに関する同意要件など、モデルカードの追加利用条件も確認してください。
 - [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS): 1.7B VoiceDesign, CustomVoice and Base; Apache-2.0. / 1.7BのVoiceDesign・CustomVoice・Baseを使用。Apache-2.0です。
 - [Gemini 3.8 Flash TTS and Flash-Lite TTS](https://ai.google.dev/gemini-api/docs/speech-generation): cloud API models; usage, pricing, generated-audio SynthID and Google terms apply. / クラウドAPIモデルで、利用条件・料金・生成音声のSynthID・Googleの規約が適用されます。
+- [Gemini API Additional Terms](https://ai.google.dev/gemini-api/terms): data handling differs between unpaid and paid services; never include API keys or confidential/personal information in shared workflows or prompts. / 無償・有償サービスでデータの扱いが異なります。共有ワークフローやプロンプトへAPIキー・機密情報・個人情報を含めないでください。
 - [Irodori inference code](https://github.com/Aratako/Irodori-TTS), [DACVAE](https://github.com/facebookresearch/dacvae), [SilentCipher](https://github.com/SesameAILabs/silentcipher): downloaded from their projects; licenses remain with them. / 各プロジェクトから取得し、それぞれのライセンスが適用されます。
 
 ## Validation / 検証
