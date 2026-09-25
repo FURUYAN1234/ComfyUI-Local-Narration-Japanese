@@ -1,4 +1,4 @@
-import importlib.util,json,subprocess,time,uuid,re,threading
+import importlib.util,json,subprocess,time,uuid,re,threading,os,sys,urllib.error,urllib.request
 from pathlib import Path
 from datetime import datetime
 import numpy as np
@@ -12,10 +12,41 @@ from .reading_review import review
 LOCAL=Path(__file__).with_name('local_config.json')
 ROOT=Path(json.loads(LOCAL.read_text())['runtime']) if LOCAL.exists() else Path(__file__).with_name('runtime')
 MODES=['AIおまかせ','手動','AI提案＋手動上書き']
-ENGINES=['おまかせ','Irodori','Qwen']
-VOICES=['デザイン','用意された声（Qwen）']
+GEMINI_ENGINES={'Gemini 3.8 Flash TTS':'gemini-3.8-flash-tts','Gemini 3.8 Flash-Lite TTS':'gemini-3.8-flash-lite-tts'}
+ENGINES=['おまかせ','Irodori','Qwen',*GEMINI_ENGINES]
+VOICES=['デザイン','用意された声（Qwen）','用意された声（Gemini）','新しい声をデザイン（Gemini）','保存済みVoice ID（Gemini）']
 CHARACTERS={'自由指定':'','落ち着いた女性ナレーター':'落ち着いた成人女性。聞き取りやすい標準語で丁寧な解説。','明るい女性ナレーター':'明るく親しみやすい成人女性。自然で軽快な案内。','落ち着いた男性ナレーター':'落ち着いた成人男性。低めの声で丁寧な説明。','元気な男性ナレーター':'元気で親しみやすい成人男性。軽快な口調。','やさしい物語の語り手':'柔らかい成人の声。穏やかなテンポで物語を語る。','元気なアニメキャラクター':'表情豊かで元気な若い成人女性のキャラクター声。','クールなアニメキャラクター':'若い成人男性の落ち着いたキャラクター声。控えめでクールな口調。','落ち着いたニュース調':'成人の中性的な声。明瞭で抑揚を抑えたニュース調。'}
 SPEAKERS=['Ono_anna','Aiden','Dylan','Eric','Ryan','Serena','Sohee','Uncle_fu','Vivian']
+GEMINI_VOICES={
+ 'Kore｜芯のある安定した声':'Kore','Zephyr｜明るく爽やかな声':'Zephyr','Puck｜陽気で弾む声':'Puck','Charon｜情報を伝える解説声':'Charon','Fenrir｜熱量の高い興奮声':'Fenrir','Leda｜若々しい声':'Leda','Orus｜力強く揺れない声':'Orus','Aoede｜軽やかで風通しのよい声':'Aoede','Callirrhoe｜おおらかで自然な声':'Callirrhoe','Autonoe｜明朗で前向きな声':'Autonoe','Enceladus｜息づかいを感じる声':'Enceladus','Iapetus｜輪郭の明瞭な声':'Iapetus','Umbriel｜気さくで構えない声':'Umbriel','Algieba｜滑らかで上品な声':'Algieba','Despina｜なめらかで落ち着く声':'Despina','Erinome｜クリアで聞き取りやすい声':'Erinome','Algenib｜ざらつきのあるハスキー声':'Algenib','Rasalgethi｜知的な解説声':'Rasalgethi','Laomedeia｜快活でテンポのよい声':'Laomedeia','Achernar｜柔らかく控えめな声':'Achernar','Alnilam｜堂々とした芯の強い声':'Alnilam','Schedar｜均一で安定した声':'Schedar','Gacrux｜成熟した大人の声':'Gacrux','Pulcherrima｜前へ出る積極的な声':'Pulcherrima','Achird｜親しみやすい友好的な声':'Achird','Zubenelgenubi｜肩の力を抜いた会話声':'Zubenelgenubi','Vindemiatrix｜穏やかで優しい声':'Vindemiatrix','Sadachbia｜生き生きした活発な声':'Sadachbia','Sadaltager｜博識で信頼感のある声':'Sadaltager','Sulafat｜温かみのある声':'Sulafat'
+}
+GEMINI_VOICE_DESIGNS={
+ '落ち着いた女性ドキュメンタリー':'落ち着いた成人女性。中低域が豊かで、明瞭な標準語。知的で信頼感のあるドキュメンタリー調。',
+ '明るい女性ガイド':'明るく親しみやすい成人女性。透明感のある中高域で、軽快かつ聞き取りやすい案内調。',
+ '知的な女性解説':'知的な成人女性。輪郭の明瞭な声で、専門的な内容も丁寧に説明する落ち着いた口調。',
+ '優しい女性朗読':'柔らかく温かな成人女性。穏やかな息づかいと自然な抑揚で物語を読む。',
+ '低音女性ミステリー':'低めで静かな成人女性。深みと余韻があり、ミステリーや怪談に合う抑制された語り。',
+ '元気な若い女性キャラクター':'若々しく元気な成人女性。明るく表情豊かで、テンポのよいキャラクター声。',
+ 'クールな女性キャラクター':'若い成人女性。澄んだ中低域で、感情を抑えたクールなキャラクター声。',
+ '落ち着いた男性ドキュメンタリー':'落ち着いた成人男性。低めで厚みがあり、明瞭で信頼感のあるドキュメンタリー調。',
+ '温かい男性ナレーター':'温かみのある成人男性。中低域が豊かで、親しく語りかける自然な口調。',
+ '知的な男性ニュース':'知的な成人男性。発音が明瞭で、抑揚を適度に抑えたニュース・解説調。',
+ '力強い男性予告編':'力強い成人男性。低音の響きと明確なアクセントを持つ、映画予告のような語り。',
+ '若々しい男性ガイド':'若々しく爽やかな成人男性。軽快で親しみやすく、チュートリアルに合う声。',
+ '老練な男性物語':'年齢を重ねた男性。穏やかな低音と豊かな間で、経験を感じさせる物語調。',
+ '中性的で透明感のある声':'性別を強調しない成人の声。透明感があり、柔らかく明瞭な現代的ナレーション。',
+ '静かなささやき':'成人の声。近い距離で静かにささやき、息づかいは自然で言葉は明瞭。',
+ '子ども向け物語':'優しく親しみやすい成人の語り手。表情豊かで安心感があり、子どもにも聞き取りやすい。',
+ 'ゲームチュートリアル':'明るく明瞭な成人の声。操作説明を短く区切り、テンポよく案内する。',
+ '企業プレゼンテーション':'落ち着いた成人の声。清潔感と信頼感があり、要点を明瞭に伝えるビジネス調。',
+ 'ラジオDJ':'親しみやすい成人の声。滑らかなテンポと自然な高揚感を持つラジオ番組調。',
+ 'ホラー・怪談':'静かな成人の声。低めで余韻が長く、不穏さを抑制して表現する怪談調。',
+ '自由入力':''
+}
+GEMINI_EMOTIONS={'自動（原稿・口調から判断）':'','ニュートラル':'感情を誇張せず自然に','喜び':'嬉しさを込めて','落ち着き':'落ち着きと安心感を込めて','期待':'期待感を込めて','悲しみ':'静かな悲しみを込めて','緊張':'緊張感を保って','怒り':'抑制された怒りを込めて','驚き':'驚きを自然に表して','優しさ':'思いやりと優しさを込めて','自信':'自信をもって堂々と','ささやき':'近くでささやくように','自由入力':''}
+GEMINI_EMOTION_STRENGTH={'控えめ':'感情表現は控えめに','標準':'感情表現は自然な強さで','強め':'感情をはっきり強めに表現して'}
+_gemini_api_key=''
+_gemini_voice_cache={}
 DEFAULT_PAUSE_MS=800
 def silence_samples(sample_rate,pause_ms=DEFAULT_PAUSE_MS):return max(0,round(sample_rate*max(0,pause_ms)/1000))
 def notify(node,state,text,terminal=False,client_id=...):
@@ -25,6 +56,41 @@ def notify(node,state,text,terminal=False,client_id=...):
  if recipient:
   server.send_sync('local_narration.status',{'node':str(node),'state':state,'text':text,'terminal':terminal},recipient)
 _planner_lock=threading.Lock()
+
+def _sanitize_gemini_api_key(raw):
+ text=str(raw or '').strip();match=re.search(r'AIza[A-Za-z0-9_-]{20,}',text)
+ if match:return match.group(0)
+ if not text or len(text)<20 or any(ord(c)>127 for c in text) or re.search(r'\s',text):raise RuntimeError('APIキー本体だけを貼り付けてください。')
+ return text
+
+def _gemini_key():
+ if not _gemini_api_key:raise RuntimeError('Gemini APIキーがこのComfyUIセッションに登録されていません。API入力窓から保存してください。')
+ return _gemini_api_key
+
+def _gemini_json(url,key,body=None):
+ data=None if body is None else json.dumps(body,ensure_ascii=False).encode()
+ req=urllib.request.Request(url,data=data,headers={'x-goog-api-key':key,'Content-Type':'application/json'},method='GET' if body is None else 'POST')
+ try:
+  with urllib.request.urlopen(req,timeout=60) as response:return json.loads(response.read())
+ except urllib.error.HTTPError as e:
+  detail=e.read().decode(errors='replace')[-1000:].replace(key,'[REDACTED]')
+  raise RuntimeError(f'Gemini API認証・要求エラー ({e.code}): {detail}') from None
+ except (OSError,ValueError) as e:raise RuntimeError('Gemini APIへ接続できませんでした: '+str(e).replace(key,'[REDACTED]')) from None
+
+def _validate_gemini_key(key):
+ result=_gemini_json('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts',key)
+ if result.get('name')!='models/gemini-3.8-flash-tts':raise RuntimeError('Gemini 3.8 Flash TTSを利用できるAPIキーではありません。')
+
+def _gemini_designed_voice(description,key,model):
+ description=description.strip()
+ if not description:raise ValueError('Geminiで作る声の特徴を入力してください。')
+ cache_key=(model,description)
+ if cache_key in _gemini_voice_cache:return _gemini_voice_cache[cache_key]
+ result=_gemini_json('https://generativelanguage.googleapis.com/v1beta/voices',key,{'store':True,'voice':{'model':model,'type':'prompted','display_name':'Local Narration Japanese','language_code':'ja-JP','prompted':{'input':description}}})
+ voice_id=result.get('id','')
+ if not re.fullmatch(r'voice_[A-Za-z0-9_-]+',voice_id):raise RuntimeError('Geminiの声デザイン結果にVoice IDがありません。')
+ _gemini_voice_cache[cache_key]=voice_id
+ return voice_id
 def load_planner():
  spec=importlib.util.spec_from_file_location('local_narration_planner',ROOT/'planner.py')
  module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
@@ -93,26 +159,38 @@ class NarrationDirection:
    'seed':('INT',{'default':42,'min':0,'max':2147483647}),
    'character':(list(CHARACTERS),{'default':'自由指定'}),
    'reference_text':('STRING',{'multiline':True,'default':'','tooltip':'参照音声で話している原稿。Qwenでは入力推奨。'}),
-  },'optional':{'reference_audio':('NARRATION_REFERENCE',),'dialogue_blocks':('STRING',{'default':'','multiline':False})},'hidden':{'unique_id':'UNIQUE_ID'}}
+  },'optional':{
+   'reference_audio':('NARRATION_REFERENCE',),'dialogue_blocks':('STRING',{'default':'','multiline':False}),
+   'gemini_voice':(list(GEMINI_VOICES),{'default':next(iter(GEMINI_VOICES)),'tooltip':'Gemini公式の30種類のスタジオボイス。'}),
+   'gemini_voice_design':('STRING',{'multiline':True,'default':'','tooltip':'新しい声を作る場合の恒常的な声質・年齢感・高さ・アクセント。実在人物の模倣は指定しないでください。'}),
+   'gemini_voice_id':('STRING',{'default':'','tooltip':'Google AI Studio等で作成済みのvoice_... ID。APIキーではありません。'}),
+   'gemini_emotion':(list(GEMINI_EMOTIONS),{'default':'自動（原稿・口調から判断）'}),
+   'gemini_emotion_strength':(list(GEMINI_EMOTION_STRENGTH),{'default':'標準'}),
+   'gemini_emotion_custom':('STRING',{'default':'','tooltip':'自由入力を選んだ場合の感情・演技指示。'}),
+   # Keep new persisted widgets at the end so older positional widget_values remain compatible.
+   'gemini_voice_design_preset':(list(GEMINI_VOICE_DESIGNS),{'default':next(iter(GEMINI_VOICE_DESIGNS)),'tooltip':'Gemini Voice Designへ渡す声イメージ。自由入力時だけ詳細欄を使います。'}),
+  },'hidden':{'unique_id':'UNIQUE_ID'}}
  RETURN_TYPES=('NARRATION_PLAN','STRING')
  RETURN_NAMES=('Voice plan / 音声企画','Chosen settings / 選定内容')
  FUNCTION='plan';CATEGORY='audio/Local Narration'
- def plan(self,text,purpose,mode,engine,voice_mode,speaker,style,speed,seed,reference_text,reference_audio=None,unique_id=None,character="自由指定",dialogue_blocks=""):
+ def plan(self,text,purpose,mode,engine,voice_mode,speaker,style,speed,seed,reference_text,gemini_voice=None,gemini_voice_design='',gemini_voice_id='',gemini_emotion='自動（原稿・口調から判断）',gemini_emotion_strength='標準',gemini_emotion_custom='',gemini_voice_design_preset=None,reference_audio=None,unique_id=None,character="自由指定",dialogue_blocks=""):
   blocks=[];target=''
   if dialogue_blocks.strip():
    blocks,target=parse_blocks(dialogue_blocks)
    text='\n'.join(b['text'] for b in blocks if not target or b['id']==target)
   if mode not in MODES or engine not in ENGINES or voice_mode not in VOICES or speaker not in SPEAKERS:raise ValueError('設定の選択値が不正です。')
   if character not in CHARACTERS:raise ValueError('声キャラの選択値が不正です。')
-  if mode!='AIおまかせ' and CHARACTERS[character]:style=CHARACTERS[character]+(' 追加指定：'+style.strip() if style.strip() else '')
+  if mode!='AIおまかせ' and CHARACTERS[character]:
+   if engine in GEMINI_ENGINES and voice_mode=='新しい声をデザイン（Gemini）':gemini_voice_design=CHARACTERS[character]+(' 追加指定：'+gemini_voice_design.strip() if gemini_voice_design.strip() else '')
+   else:style=CHARACTERS[character]+(' 追加指定：'+style.strip() if style.strip() else '')
   if not text.strip():raise ValueError('読み上げ原稿を入力してください。')
   if mode=='AIおまかせ' or (mode=='AI提案＋手動上書き' and (engine=='おまかせ' or not style.strip() or not speed)):raise ValueError('声が未確定です。最初のノードの「AIに相談」または「声をプリセットから選ぶ・調整」で、声を採用してから実行してください。')
   if speed and not .5<=speed<=2:raise ValueError('話速は0（おまかせ）、または0.5〜2.0倍です。')
   try:
    p={'engine':'Irodori' if engine=='おまかせ' else engine,'style':style.strip() or '自然で聞き取りやすい日本語のナレーション。','speed':speed or 1.0,'reason':'画面で採用した声の設定'}
-   chosen='design' if mode=='AIおまかせ' else dict(zip(VOICES,['design','preset']))[voice_mode]
+   chosen='design' if mode=='AIおまかせ' else {'デザイン':'design','用意された声（Qwen）':'preset','用意された声（Gemini）':'gemini_preset','新しい声をデザイン（Gemini）':'gemini_design','保存済みVoice ID（Gemini）':'gemini_saved'}[voice_mode]
    reference=None
-   if mode!='AIおまかせ' and reference_audio and reference_audio.get('enabled'):
+   if mode!='AIおまかせ' and reference_audio and reference_audio.get('enabled') and p['engine'] not in GEMINI_ENGINES:
     chosen='reference'
     name=reference_audio.get('audio','').strip()
     if not name:raise ValueError('参照音声をONにする場合は、参照ノードで音声を選択してください。')
@@ -122,8 +200,24 @@ class NarrationDirection:
     waveform,sr=load(str(path));reference={'waveform':waveform.unsqueeze(0),'sample_rate':sr}
     if not waveform.numel() or float(waveform.abs().max())<1e-5:raise ValueError('参照音声が無音です。実際に話している音声を選択してください。')
     reference_text=reference_audio.get('transcript','')
-   if chosen=='preset' and p['engine']!='Qwen':raise ValueError('用意された話者はQwen専用です。Qwenを選ぶかデザインを使用してください。')
+   if p['engine']=='Qwen' and chosen not in ('design','preset','reference'):raise ValueError('Qwenの声の作り方を選び直してください。')
+   if p['engine']=='Irodori' and chosen not in ('design','reference'):raise ValueError('Irodoriの声の作り方を選び直してください。')
+   if p['engine'] in GEMINI_ENGINES:
+    if reference_audio and reference_audio.get('enabled'):raise ValueError('Geminiでは参照音声を使いません。参照ノードをOFFにしてください。')
+    if chosen not in ('gemini_preset','gemini_design','gemini_saved'):raise ValueError('Geminiの声の作り方を選び直してください。')
+    gemini_voice=gemini_voice or next(iter(GEMINI_VOICES))
+    if chosen=='gemini_preset' and gemini_voice not in GEMINI_VOICES:raise ValueError('Gemini標準ボイスの選択値が不正です。')
+    gemini_voice_design_preset=gemini_voice_design_preset if gemini_voice_design_preset in GEMINI_VOICE_DESIGNS else next(iter(GEMINI_VOICE_DESIGNS))
+    if chosen=='gemini_design':
+     gemini_voice_design=gemini_voice_design.strip() if gemini_voice_design_preset=='自由入力' else GEMINI_VOICE_DESIGNS[gemini_voice_design_preset]
+     if not gemini_voice_design:raise ValueError('Geminiで作る声の特徴を入力してください。')
+    if chosen=='gemini_saved' and not re.fullmatch(r'voice_[A-Za-z0-9_-]+',gemini_voice_id.strip()):raise ValueError('保存済みのGemini Voice ID（voice_...）を入力してください。')
+    if gemini_emotion not in GEMINI_EMOTIONS or gemini_emotion_strength not in GEMINI_EMOTION_STRENGTH:raise ValueError('Gemini感情設定の選択値が不正です。')
+    emotion=gemini_emotion_custom.strip() if gemini_emotion=='自由入力' else GEMINI_EMOTIONS[gemini_emotion]
+    if gemini_emotion=='自由入力' and not emotion:raise ValueError('Geminiの感情・演技指示を入力してください。')
+    gemini_style=p['style'] if not emotion else p['style']+' '+emotion+'。'+GEMINI_EMOTION_STRENGTH[gemini_emotion_strength]+'。'
    p.update(text=text,voice_mode=chosen,speaker=speaker,reference_text=reference_text,selection_mode=mode,character="AI選定："+p["style"] if mode=="AIおまかせ" else character)
+   if p['engine'] in GEMINI_ENGINES:p.update(gemini_model=GEMINI_ENGINES[p['engine']],gemini_voice=gemini_voice,gemini_voice_design_preset=gemini_voice_design_preset,gemini_voice_design=gemini_voice_design.strip(),gemini_voice_id=gemini_voice_id.strip(),gemini_emotion=gemini_emotion,gemini_emotion_strength=gemini_emotion_strength,gemini_emotion_custom=gemini_emotion_custom.strip(),gemini_style=gemini_style)
    if blocks:p.update(dialogue_blocks=blocks,block_target=target,direction_id=str(unique_id))
    shown=json.dumps(p,ensure_ascii=False,indent=2)
    if chosen=='reference':p['_reference_audio']=reference
@@ -183,7 +277,12 @@ class NarrationGenerate:
   if review_readings:
    notify(unique_id,'running','台詞と読みの確認待ち / Review readings')
    p=review(p,unique_id)
-  if p['engine'] not in ['Irodori','Qwen']:raise ValueError('音声モデルが不正です。')
+  if p['engine'] not in ['Irodori','Qwen',*GEMINI_ENGINES]:raise ValueError('音声モデルが不正です。')
+  gemini_key=None
+  if p['engine'] in GEMINI_ENGINES:
+   gemini_key=_gemini_key()
+   if p['voice_mode']=='gemini_preset':p['gemini_voice_id']=GEMINI_VOICES[p['gemini_voice']]
+   elif p['voice_mode']=='gemini_design':p['gemini_voice_id']=_gemini_designed_voice(p['gemini_voice_design'],gemini_key,p['gemini_model'])
   stamp=datetime.now().strftime('%Y%m%d%H%M%S')+'_'+uuid.uuid4().hex[:6]
   out=Path(folder_paths.get_output_directory())/'audio/LocalNarration'/stamp
   out.mkdir(parents=True,exist_ok=False)
@@ -192,13 +291,15 @@ class NarrationGenerate:
    sf.write(out/'reference.wav',audio,reference['sample_rate']);p['reference']=str(out/'reference.wav')
   request={'plan':p,'options':options,'output':str(out)}
   (out/'request.json').write_text(json.dumps(request,ensure_ascii=False,indent=2))
-  config=json.loads((ROOT/'config.json').read_text());python=config['python'][p['engine']]
+  config=json.loads((ROOT/'config.json').read_text());python=config['python'].get(p['engine'],sys.executable)
   mm.unload_all_models();mm.soft_empty_cache()
-  notify(unique_id,'running',p['engine']+' 音声生成中 / GPU')
+  notify(unique_id,'running',p['engine']+(' 音声生成中 / Cloud API' if gemini_key else ' 音声生成中 / GPU'))
   proc=None
   try:
    with (out/'generation.log').open('w') as log:
-    proc=subprocess.Popen([python,'-u',str(ROOT/'worker.py'),str(out/'request.json')],stdout=log,stderr=subprocess.STDOUT)
+    child_env=os.environ.copy()
+    if gemini_key:child_env['LOCAL_NARRATION_GEMINI_API_KEY']=gemini_key
+    proc=subprocess.Popen([python,'-u',str(ROOT/'worker.py'),str(out/'request.json')],stdout=log,stderr=subprocess.STDOUT,env=child_env)
     started=time.monotonic()
     while proc.poll() is None:
      mm.throw_exception_if_processing_interrupted()
@@ -301,6 +402,28 @@ async def download_models(request):
 async def activity(request):
  return web.json_response({'busy':_planner_lock.locked() or _download_lock.locked()},headers={'Cache-Control':'no-store'})
 
+@PromptServer.instance.routes.get('/local-narration/gemini-credential-status')
+async def gemini_credential_status(request):
+ return web.json_response({'configured':bool(_gemini_api_key),'storage':'process_memory'},headers={'Cache-Control':'no-store'})
+
+@PromptServer.instance.routes.post('/local-narration/gemini-credential')
+async def save_gemini_credential(request):
+ global _gemini_api_key
+ if request.headers.get('Origin') and request.headers['Origin'].split('://',1)[-1]!=request.host:return web.json_response({'error':'Cross-origin request rejected'},status=403)
+ try:
+  body=await request.json();key=_sanitize_gemini_api_key(body.get('api_key','') if isinstance(body,dict) else '')
+  await asyncio.to_thread(_validate_gemini_key,key)
+ except (RuntimeError,ValueError,TypeError) as e:return web.json_response({'error':str(e)},status=401)
+ _gemini_api_key=key
+ return web.json_response({'ok':True,'verified':True,'storage':'process_memory'})
+
+@PromptServer.instance.routes.delete('/local-narration/gemini-credential')
+async def remove_gemini_credential(request):
+ global _gemini_api_key
+ if request.headers.get('Origin') and request.headers['Origin'].split('://',1)[-1]!=request.host:return web.json_response({'error':'Cross-origin request rejected'},status=403)
+ _gemini_api_key='';_gemini_voice_cache.clear()
+ return web.json_response({'ok':True,'configured':False,'storage':'process_memory'})
+
 @PromptServer.instance.routes.post('/local-narration/consult')
 async def consult(request):
  if request.headers.get('Origin') and request.headers['Origin'].split('://',1)[-1]!=request.host:return web.json_response({'error':'Cross-origin request rejected'},status=403)
@@ -317,7 +440,8 @@ async def consult(request):
  if running or pending:return web.json_response({'error':'音声生成などの実行中です。終了後に相談してください。'},status=409)
  if not _planner_lock.acquire(blocking=False):return web.json_response({'error':'AIへの相談が実行中です。終了後に再度相談してください。'},status=409)
  try:
-  result=await asyncio.to_thread(load_planner().propose,text,brief,seed,lambda message:None,kind)
+  engines=['Irodori','Qwen']+(list(GEMINI_ENGINES) if _gemini_api_key else [])
+  result=await asyncio.to_thread(load_planner().propose,text,brief,seed,lambda message:None,kind,engines)
   return web.json_response(result)
  except Exception as e:return web.json_response({'error':str(e)},status=500)
  finally:_planner_lock.release()

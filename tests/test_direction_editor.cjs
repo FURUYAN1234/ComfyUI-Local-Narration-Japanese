@@ -6,14 +6,14 @@ class E{
  get lastElementChild(){return this.children.at(-1);}showModal(){}close(){}remove(){this.removed=true;}focus(){}scrollIntoView(){}
 }
 const body=new E('body'),events=[],requests=[];let resolveFetch,ext;const queued=[];
-const ctx={document:{body,createElement:t=>new E(t)},app:{queuePrompt:async(...args)=>queued.push(args),graph:{setDirtyCanvas(){},links:{}},registerExtension:e=>ext=e},api:{dispatchEvent:e=>events.push(e.detail),fetchApi:(url,o)=>{requests.push(JSON.parse(o.body));return new Promise(r=>resolveFetch=r);}},CustomEvent:class{constructor(type,o){this.detail=o.detail;}},crypto:require('crypto').webcrypto,Map,Date,queueMicrotask:f=>f(),setInterval:()=>1,clearInterval(){}};
+const ctx={document:{body,createElement:t=>new E(t),querySelector:()=>null},app:{queuePrompt:async(...args)=>queued.push(args),graph:{setDirtyCanvas(){},links:{}},registerExtension:e=>ext=e},api:{dispatchEvent:e=>events.push(e.detail),fetchApi:(url,o={})=>{if(url.includes('gemini-credential-status'))return Promise.resolve({ok:true,json:async()=>({configured:false})});requests.push(JSON.parse(o.body));return new Promise(r=>resolveFetch=r);}},CustomEvent:class{constructor(type,o){this.detail=o.detail;}},crypto:require('crypto').webcrypto,Map,Date,queueMicrotask:f=>f(),setInterval:()=>1,clearInterval(){}};
 vm.createContext(ctx);const base=process.argv[2];
 for(const f of ['dialogue_blocks.js','direction_editor.js'])vm.runInContext(fs.readFileSync(base+f,'utf8').replace(/^import .*;\n/gm,'').replace(/export function /g,'function '),ctx);
-const vals={text:'元の台詞。',dialogue_blocks:'',purpose:'紹介',mode:'AIおまかせ',engine:'おまかせ',voice_mode:'デザイン',speaker:'Ono_anna',character:'自由指定',style:'',speed:0,seed:42};
-const widgets=Object.entries(vals).map(([name,value])=>({name,value,options:{values:name==='speaker'?['Ono_anna','Ryan']:name==='character'?['自由指定','落ち着いた女性ナレーター']:[]}}));
+const vals={text:'元の台詞。',dialogue_blocks:'',purpose:'紹介',mode:'AIおまかせ',engine:'おまかせ',voice_mode:'デザイン',speaker:'Ono_anna',character:'自由指定',style:'',speed:0,seed:42,gemini_voice:'Kore｜芯のある安定した声',gemini_voice_design_preset:'落ち着いた女性ドキュメンタリー',gemini_voice_design:'',gemini_voice_id:'',gemini_emotion:'自動（原稿・口調から判断）',gemini_emotion_strength:'標準',gemini_emotion_custom:''};
+const widgets=Object.entries(vals).map(([name,value])=>({name,value,options:{values:name==='speaker'?['Ono_anna','Ryan']:name==='character'?['自由指定','落ち着いた女性ナレーター']:name==='gemini_voice'?['Kore｜芯のある安定した声','Puck｜陽気で弾む声']:name==='gemini_voice_design_preset'?['落ち着いた女性ドキュメンタリー','明るい女性ガイド','自由入力']:name==='gemini_emotion'?['自動（原稿・口調から判断）','喜び','自由入力']:name==='gemini_emotion_strength'?['控えめ','標準','強め']:[]}}));
 const node={id:1,widgets,properties:{},comfyClass:'LocalNarrationDirection',addWidget(){return {};},addDOMWidget(name,type,panel,options){this.panel=panel;const w={name,options};widgets.push(w);return w;}};
 ext.nodeCreated(node);ctx.installDirectionEditor(node);
-const get=n=>widgets.find(w=>w.name===n),all=e=>e.children.flatMap(c=>[c,...all(c)]),find=(e,t)=>all(e).find(c=>c.textContent===t),field=(e,l)=>all(e).find(c=>c['aria-label']===l);
+const get=n=>widgets.find(w=>w.name===n),all=e=>e.children.flatMap(c=>[c,...all(c)]),find=(e,t)=>all(e).find(c=>c.textContent===t),field=(e,l)=>all(e).find(c=>c['aria-label']===l),tick=()=>new Promise(setImmediate);
 assert.deepEqual(widgets.slice(0,Object.keys(vals).length).map(w=>w.value),Object.values(vals),'opening does not mutate legacy values');
 assert(all(node.panel).some(e=>e.textContent.includes('声は未確定')));
 (async()=>{
@@ -21,6 +21,7 @@ assert(all(node.panel).some(e=>e.textContent.includes('声は未確定')));
  assert.deepEqual(find(d,'Suggest / AIに提案してもらう').parentElement.children.map(e=>e.textContent),['Cancel / キャンセル（変更を破棄）','Apply / 提案を台詞・声へ採用','Suggest / AIに提案してもらう']);
  field(d,'Request / 作りたい内容・希望').value='紹介台詞を5行作って';
  const running=find(d,'Suggest / AIに提案してもらう').onclick();
+ await tick();
  assert.equal(requests.at(-1).kind,'compose');assert.equal(get('text').value,'元の台詞。');
  resolveFetch({ok:true,json:async()=>({text:'一行目です。\n二行目です。\n三行目です。\n四行目です。\n五行目です。',engine:'Irodori',style:'穏やかな声',speed:1,reason:'紹介向け'})});await running;
  assert.equal(get('text').value,'元の台詞。','proposal must remain a draft');
@@ -37,12 +38,12 @@ assert(all(node.panel).some(e=>e.textContent.includes('声は未確定')));
  find(d,'Cancel / キャンセル（変更を破棄）').onclick();assert.equal(get('style').value,'穏やかな声');
  find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();d=body.children.at(-1);
  field(d,'Create / AIに作ってもらうもの').value='台詞を作る・直す（声は変更しない）';
- let req=find(d,'Suggest / AIに提案してもらう').onclick();assert.equal(requests.at(-1).kind,'script');
+ let req=find(d,'Suggest / AIに提案してもらう').onclick();await tick();assert.equal(requests.at(-1).kind,'script');
  resolveFetch({ok:true,json:async()=>({text:'台詞だけ変更しました。'})});await req;
  find(d,'Apply script / 台詞一覧へ採用').onclick();assert.equal(get('text').value,'台詞だけ変更しました。');assert.equal(get('style').value,'穏やかな声');
  find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();d=body.children.at(-1);
  field(d,'Create / AIに作ってもらうもの').value='声だけ提案（台詞は変更しない）';
- req=find(d,'Suggest / AIに提案してもらう').onclick();assert.equal(requests.at(-1).kind,'plan');
+ req=find(d,'Suggest / AIに提案してもらう').onclick();await tick();assert.equal(requests.at(-1).kind,'plan');
  resolveFetch({ok:true,json:async()=>({engine:'Qwen',style:'穏やかな声',speed:1.1,reason:'声のみ変更'})});await req;
  find(d,'Apply voice / 声の設定へ採用').onclick();assert.equal(get('engine').value,'Qwen');assert.equal(get('text').value,'台詞だけ変更しました。');
  find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();d=body.children.at(-1);const pending=find(d,'Suggest / AIに提案してもらう').onclick();find(d,'Cancel / キャンセル（変更を破棄）').onclick();resolveFetch({ok:true,json:async()=>({text:'遅い結果',engine:'Qwen',style:'別の声',speed:1})});await pending;

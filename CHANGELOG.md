@@ -1,8 +1,15 @@
+# Changes / 更新履歴
+
+## v1.2.0
+
+- Added optional Gemini 3.8 Flash TTS and Flash-Lite TTS to the normal planning, reading-review, generation and saved-audio path. / Gemini 3.8 Flash TTSとFlash-Lite TTSを任意選択できる音声エンジンとして、通常の企画・読み確認・生成・音声保存経路へ追加しました。
+- Added a session-only API dialog, 30 official studio voices, 20 Voice Design presets, free-form Voice Design, existing Voice ID and automatic/manual emotion controls. / セッション限定API入力窓、公式音声30種、Voice Design用プリセット20種、自由入力、既存Voice ID、感情の自動・手動設定を追加しました。
+- AI selection offers Gemini only while an API key is registered; local Irodori and Qwen remain available without a Gemini key. Empty free-form voice descriptions are rejected before any API request. / AIの自動選択はAPI登録中だけGeminiを候補に加え、Irodori・QwenはGemini APIなしで従来どおり使えます。自由入力の声説明が空欄ならAPI送信前に停止します。
+- Reordered the first-node controls to API registration, Voice settings, then AI consultation; removed the duplicate API button from the voice dialog. / 最初のノードをAPI登録→声の確認→AI相談の順にし、声設定窓の重複APIボタンを削除しました。
+
 ## v1.1.5
 
 - Wait for LM Studio API and model readiness without blocking on `lms server start` or `lms load`; an idle retained model is reused. / `lms server start` と `lms load` の終了待ちをせず、LM StudioのAPI・モデル準備完了を確認します。待機中でない既存モデルは再利用します。
-
-# Changes / 更新履歴
 
 ## v1.1.4
 

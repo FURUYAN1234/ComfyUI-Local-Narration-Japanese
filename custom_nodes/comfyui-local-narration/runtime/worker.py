@@ -5,6 +5,7 @@ import numpy as np
 import soundfile as sf
 import torch
 from audio_join import DEFAULT_PAUSE_MS,join_numpy_audio
+from gemini_api import request_audio
 r=Path(__file__).resolve().parent
 config=json.loads((r/'config.json').read_text())
 req=json.loads(Path(sys.argv[1]).read_text())
@@ -31,7 +32,7 @@ if p['engine']=='Irodori':
   chunk=out/f'part-{i:03}.wav';sf.write(chunk,a,sr)
   if not reference:reference=str(chunk)
   all_audio.append(a);reports.append({'text':part,'seconds':len(a)/sr})
-else:
+elif p['engine']=='Qwen':
  from qwen_tts import Qwen3TTSModel
  mode=p['voice_mode'];kind={'design':'VoiceDesign','preset':'CustomVoice','reference':'Base'}[mode]
  def load(kind):return Qwen3TTSModel.from_pretrained(config['models']['Qwen/Qwen3-TTS-12Hz-1.7B-'+kind],device_map='cuda:0',dtype=torch.bfloat16,attn_implementation='sdpa')
@@ -48,6 +49,17 @@ else:
   all_audio.append(a);reports.append({'text':part,'seconds':len(a)/sr})
   if mode=='design' and len(parts)>1:
    reference=str(chunk);reference_text=part;mode='reference';del model;gc.collect();torch.cuda.empty_cache();model=load('Base')
+else:
+ key=os.environ.pop('LOCAL_NARRATION_GEMINI_API_KEY','')
+ if not key:raise RuntimeError('Gemini APIキーが生成プロセスへ渡されていません。')
+ model_id=p.get('gemini_model')
+ if model_id not in ('gemini-3.8-flash-tts','gemini-3.8-flash-lite-tts'):raise ValueError('Gemini TTSモデルが不正です。')
+ voice_id=p.get('gemini_voice_id','')
+ if not re.fullmatch(r'(?:voice_[A-Za-z0-9_-]+|[A-Za-z][A-Za-z0-9_-]*)',voice_id):raise ValueError('Gemini Voice IDが不正です。')
+ for i,part in enumerate(parts):
+  chunk=out/f'part-{i:03}.wav';chunk.write_bytes(request_audio(model_id,voice_id,part,p.get('gemini_style',p['style']),key))
+  a,sr=sf.read(chunk,dtype='float32',always_2d=True);a=a.mean(axis=1)
+  all_audio.append(a);reports.append({'text':part,'seconds':len(a)/sr})
 sf.write(out/'raw.wav',join_numpy_audio(all_audio,sr,opt.get('pause_ms',DEFAULT_PAUSE_MS)),sr)
 pitch=2**(opt['pitch_semitones']/12)
 filters=[f'asetrate={sr}*{pitch}',f'aresample={sr}',f'atempo={p["speed"]/pitch}',f'volume={opt["volume_db"]}dB']

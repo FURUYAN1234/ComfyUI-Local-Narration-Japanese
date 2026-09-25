@@ -12,7 +12,7 @@ with tempfile.TemporaryDirectory() as temp:
   if body is None:return {}
   bodies.append(json.loads(json.dumps(body)))
   return {'choices':[{'finish_reason':'stop','message':{'content':json.dumps({'sentences':answers.pop(0)})}}]}
- lm=SimpleNamespace(endpoint=lambda:'http://local',api=api,cli=lambda *a,**k:(calls.append(a) or '[]'))
+ lm=SimpleNamespace(endpoint=lambda:'http://local',api=api,model=lambda *_:None,load_model=lambda *a,**k:calls.append(('load',*a)),unload_model=lambda *a,**k:calls.append(('unload',*a)))
  loader=SimpleNamespace(loader=SimpleNamespace(exec_module=lambda m:None))
  with patch.object(m.importlib.util,'spec_from_file_location',return_value=loader),patch.object(m.importlib.util,'module_from_spec',return_value=lm):
   answers[:]=[['テラフォーマーについて考えます。'],['話題を紹介します。','背景を説明します。','具体例を挙げます。','問題を考えます。','考察をまとめます。']]

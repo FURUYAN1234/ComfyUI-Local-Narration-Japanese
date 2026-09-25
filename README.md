@@ -1,6 +1,6 @@
 # Local Japanese Narration / 日本語おまかせナレーション
 
-One ComfyUI workflow for Irodori and Qwen3-TTS, with AI/manual control and pronunciation review. / IrodoriとQwen3-TTSを1本で切り替え、AIおまかせ・手動設定・生成前の読み確認を使えるComfyUIワークフローです。
+One ComfyUI workflow for Irodori, Qwen3-TTS, Gemini 3.8 Flash TTS and Flash-Lite TTS, with AI/manual control and pronunciation review. / Irodori・Qwen3-TTS・Gemini 3.8 Flash TTS・Flash-Lite TTSを1本で切り替え、AIおまかせ・手動設定・生成前の読み確認を使えるComfyUIワークフローです。
 
 The workflow uses a compact left-to-right layout: consultation and adopted inputs, generation, then the scrolling audio result list. / ワークフローは、相談・採用済み入力、生成、スクロール式の音声結果一覧を左から右へ並べます。
 
@@ -31,6 +31,7 @@ Manual mode does not use LM Studio. / 手動モードではLM Studioを使いま
 Download the LLM inside LM Studio before using AI mode. / AI利用前にLM Studio側でLLMを取得してください。
 `LOCAL_NARRATION_LMS_CLI` can point to the CLI, and `LOCAL_NARRATION_LM_ENDPOINT` can override the API URL. / CLIの場所とAPI接続先は左記の環境変数で指定できます。
 Windows LM Studio is detected from its standard installation on WSL. / WSLではWindows版LM Studioの標準配置を検出します。
+Gemini generation requires a Gemini API key and uses the paid cloud API, but key registration is optional when using local Irodori or Qwen. The optional API button is the first control in the narration node. Saving a verified key closes the dialog automatically; the key is kept only in the running ComfyUI process memory and is never written to the workflow, output JSON or log. / Gemini生成にはGemini APIキーと有料クラウドAPIが必要ですが、ローカルのIrodori・Qwenだけを使う場合、API登録は不要です。任意のAPI登録ボタンは音声企画ノードの最初に表示されます。認証して保存すると入力窓は自動で閉じ、キーは動作中のComfyUIプロセスのメモリだけに保持され、ワークフロー・出力JSON・ログへ保存されません。
 
 ## Install / 導入
 
@@ -58,11 +59,12 @@ Enable the separate reference node and upload suitable reference speech to use i
 
 ## Use / 使い方
 
-1. Consult AI at the top of the first node, or enter your script and choose a voice yourself. / 最初のノード上部でAIに相談するか、自分で台詞と声を設定します。
-2. Review and edit the proposed script and voice in the dialog, then Apply. / 小窓で提案された台詞と声を確認・修正し、採用します。
-3. Confirm the adopted script and voice shown on the node. / ノード上の採用済み台詞と声を確認します。
-4. Run, approve the original text and readings, then generate. / 実行し、原文と読みを承認してから生成します。
-5. Play and save full audio or individual sentences in the final scrolling list. / 最後のスクロール一覧で全体・台詞別の音声を再生・保存します。
+1. Optional: register a Gemini API key with the first button only when using Gemini TTS. / 任意：Gemini TTSを使う場合だけ、最初のボタンからGemini APIキーを登録します。
+2. Review or set the current voice in Voice settings, then consult AI when you want a script or voice proposal. / 「声を確認・調整」で現在の声を確認・設定し、台詞や声の提案が必要な場合はAIに相談します。
+3. Review and edit the proposed script and voice in the dialog, then Apply. / 小窓で提案された台詞と声を確認・修正し、採用します。
+4. Confirm the adopted script and voice shown on the node. / ノード上の採用済み台詞と声を確認します。
+5. Run, approve the original text and readings, then generate. / 実行し、原文と読みを承認してから生成します。
+6. Play and save full audio or individual sentences in the final scrolling list. / 最後のスクロール一覧で全体・台詞別の音声を再生・保存します。
 
 For a fully manual start, type directly in the adopted-script field or use Edit script → Voice settings → Run and review readings; this route does not open AI consultation. / すべて手入力する場合は、採用済み台詞欄へ直接入力するか「台詞を1文ずつ編集」→「声を確認・調整」→「実行して読みを確認」の順に操作し、AI相談は使いません。
 
@@ -86,6 +88,8 @@ The adopted-script field is directly editable. Copy, Paste, Clear, Undo and Redo
 When the script is empty, the node Run button is disabled and explains that a script is required. Restoring or entering text enables it again. / 台詞が空の間はノードの実行ボタンを無効にし、台詞が必要であることを表示します。文字を入力または戻すと再び実行できます。
 Voice settings shows the adopted voice and lets you select or revise it. AI consultation proposes settings from your request; applying the proposal makes it the adopted voice. / 「声を確認・調整」は採用済みの声を表示し、選択・変更できます。AI相談は希望から設定を提案し、提案を採用するとその声が採用済みの声になります。
 Edit voice offers model, character and tone presets; choosing Custom tone reveals a shared voice/tone text field. Seed controls are under Advanced. / 声の編集ではモデル・キャラクター・口調のプリセットを選べます。口調の「自由入力」で声質・口調の文章欄を表示します。候補番号は詳細設定へまとめています。
+Gemini can use Flash for fidelity and expressive acting or Flash-Lite for speed and cost efficiency. Both expose all 30 official studio voices, 20 Voice Design image presets, a free-form Voice Design description, an existing `voice_...` ID, automatic emotion, emotion presets, intensity and free-form acting directions. AI selection uses a safe Voice Design preset; selecting `自由入力` reveals its text field. An empty custom description is rejected in both the UI and generation backend without sending an API request. / Geminiは品質・演技重視のFlashと速度・コスト重視のFlash-Liteを選択できます。両方で公式スタジオボイス30種、Voice Design用の声イメージ20プリセット、Voice Designの自由入力、既存の`voice_...` ID、感情の自動設定・プリセット・強度・自由入力を使用できます。AI選択時は安全な声イメージプリセットを使い、`自由入力`を選ぶと記述欄が現れます。自由入力が空欄なら、API送信前にUIと生成バックエンドの双方で止めます。
+AI consultation includes both Gemini models only while a Gemini API key is registered in the current ComfyUI session. Manual selection remains available; selecting Gemini without a key opens the API dialog and keeps the previous model if the dialog is cancelled. / AI相談では、このComfyUIセッションにGemini APIキーが登録されている間だけGeminiの2モデルを候補へ加えます。手動選択も可能で、未登録時にGeminiを選ぶとAPI窓が開き、閉じた場合は元のモデルへ戻ります。
 Run uses the adopted settings without another AI selection. Older workflows with undecided automatic settings must first adopt an AI proposal or a voice preset. / 実行では採用済みの設定を使い、AIによる再選定は行いません。旧ワークフローの未確定のおまかせ設定は、先にAI提案か声のプリセットを採用してください。
 Original script text is retained; approved readings go to TTS. Reading approval cannot be bypassed. / 原稿は保持し、承認した読みをTTSへ渡します。読み承認は省略できません。
 Save the workflow to retain adopted inputs and output file references. / 採用した入力と音声の参照情報を残すには、ワークフローを保存してください。
@@ -112,7 +116,7 @@ Cancel is on the left and Generate on the right. Cancelling is a normal interrup
 
 ## Tuning and outputs / 調整と出力
 
-Adjust speed, pitch, volume, pauses, Irodori steps/guidance and Qwen sampling. / 話速・音程・音量・間・Irodoriのステップと各強度・Qwenのサンプリングを調整できます。
+Adjust speed, pitch, volume, pauses, Irodori steps/guidance, Qwen sampling and Gemini emotion/acting. / 話速・音程・音量・間・Irodoriのステップと各強度・Qwenのサンプリング・Geminiの感情と演技を調整できます。
 Engine-specific settings affect only the selected engine. / モデル固有の設定は該当モデルだけに作用します。
 Long text is split; subsequent designed-voice chunks use the first generated voice as reference. / 長文は分割し、声のデザイン時は最初の声を後続区間の参照に使います。
 LM Studio runs on GPU and releases it before TTS generation. / LM StudioをGPUで実行し、解放してからTTSを生成します。
@@ -141,15 +145,21 @@ Integration code: Apache-2.0. / 連携コードはApache-2.0です。
 
 - [Irodori-TTS v4.1-Small](https://huggingface.co/Aratako/Irodori-TTS-v4.1-Small): MIT; follow the model card's additional usage restrictions, including consent for impersonation. / MIT。なりすましに関する同意要件など、モデルカードの追加利用条件も確認してください。
 - [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS): 1.7B VoiceDesign, CustomVoice and Base; Apache-2.0. / 1.7BのVoiceDesign・CustomVoice・Baseを使用。Apache-2.0です。
+- [Gemini 3.8 Flash TTS and Flash-Lite TTS](https://ai.google.dev/gemini-api/docs/speech-generation): cloud API models; usage, pricing, generated-audio SynthID and Google terms apply. / クラウドAPIモデルで、利用条件・料金・生成音声のSynthID・Googleの規約が適用されます。
 - [Irodori inference code](https://github.com/Aratako/Irodori-TTS), [DACVAE](https://github.com/facebookresearch/dacvae), [SilentCipher](https://github.com/SesameAILabs/silentcipher): downloaded from their projects; licenses remain with them. / 各プロジェクトから取得し、それぞれのライセンスが適用されます。
 
 ## Validation / 検証
 
 Real GPU runs covered Irodori, Qwen preset/reference, long-text voice reuse and LM Studio automatic selection. / 実GPUでIrodori・Qwen既定話者と参照・長文の声再利用・LM Studio自動選択を検証しています。
+Gemini request construction, Flash/Flash-Lite routing, API-key redaction, credential-dialog closure, 30-voice selection and emotion settings have automated coverage. Live API generation completed for both Gemini models through the normal ComfyUI path, and both results appeared in the final playback/save node. / Geminiの要求形式、Flash/Flash-Lite分岐、APIキー秘匿、認証窓の自動終了、30音声選択、感情設定は自動検査しています。Geminiの2モデルは通常のComfyUI経路で実API生成し、どちらも最終の再生・保存ノードへ表示されることを確認しています。
 Pronunciation still requires listening; ASR matching alone does not prove naturalness. / 発音は試聴が必要です。ASR一致だけで自然さを保証しません。
 The initial environment setup was checked with existing compatible environments; a different PC may require CUDA or system-package adjustments. / 初期設定は既存の互換環境を指定して検証しており、別PCではCUDAやシステムパッケージの調整が必要な場合があります。
 
 ## Version / バージョン
+
+v1.2.0: added optional Gemini 3.8 Flash/Flash-Lite TTS, a session-only API dialog, 30 studio voices, 20 Voice Design presets plus free-form design and existing Voice ID, API-aware AI selection, and automatic/manual emotion control. The node order is API registration, Voice settings, then AI consultation; Gemini remains optional for local Irodori/Qwen use. / v1.2.0では、Gemini 3.8 Flash/Flash-Lite TTSの任意選択、セッション限定API入力窓、公式音声30種、Voice Design用プリセット20種＋自由入力・既存Voice ID、API登録状態に連動するAI選択、感情の自動・手動設定を追加しました。ノードの操作順はAPI登録→声の確認→AI相談とし、ローカルのIrodori・Qwenだけを使う場合はGemini登録不要です。
+
+v1.1.5: AI consultation waits for the LM Studio API and model readiness instead of waiting for the CLI command to exit; an idle retained model is reused. / v1.1.5では、AI相談時にLM Studio CLIの終了を待たず、APIとモデルの準備完了を確認します。待機中でない既存モデルは再利用します。
 
 v1.1.4: made the adopted-script area directly editable, added compact copy/paste/clear/undo/redo controls, and disabled the node Run button while the script is empty. / v1.1.4では、採用済み台詞欄を直接編集できるようにし、コピー・ペースト・クリア・戻す・やり直すを追加しました。台詞が空の間はノードの実行ボタンを無効にします。
 
@@ -162,12 +172,3 @@ v1.1.1: renamed the voice button to “Voice settings / 声を確認・調整”
 v1.1.0: redesigned draft/adopt consultation, unified sentence/voice editing, targeted progress notifications, the node Run shortcut, normal reading-review cancellation, and current-versus-previous audio result labels. / 相談の下書きと採用、台詞・声の編集、対象を絞った進行通知、ノード上の実行ボタン、通常の読み確認中止、今回・前回の音声結果表示を追加しました。
 
 v1.0.0: unified TTS selection, AI/manual control, character menu, reading review and model download. / TTS切替・AI/手動・声キャラメニュー・読み確認・モデル取得を統合。
-Manual input and notifications / 手動入力と通知
-
-Manual dialogue uses the sentence dialog only; Cancel discards edits and Save commits them. / 手動の台詞入力は文ごとの小窓に一本化。キャンセルで編集を破棄し、保存で確定します。
-Progress, elapsed seconds and completion appear at the top of the screen. / 画面上部に進行状況・経過秒数・完了通知を表示します。
-
-AI consultation also shows status and elapsed time at the top of the screen while its dialog is open; proposal completion and errors appear there too. / AI相談の小窓を開いている間も、画面上部に状況と経過時間を表示し、提案完了・エラーも通知します。
-
-
-v1.1.5: AI consultation waits for the LM Studio API and model readiness instead of waiting for the CLI command to exit; an idle retained model is reused. / v1.1.5では、AI相談時にLM Studio CLIの終了を待たず、APIとモデルの準備完了を確認します。待機中でない既存モデルは再利用します。
