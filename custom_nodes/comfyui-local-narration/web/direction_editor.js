@@ -31,6 +31,13 @@ const presetGender=label=>label.includes('女性')?'女性':label.includes('男�
 const characterGender=label=>label==='元気なアニメキャラクター'?'女性':label==='クールなアニメキャラクター'?'男性':presetGender(label);
 const textGender=text=>{const female=/女性|女声|女の声/.test(text||''),male=/男性|男声|男の声/.test(text||'');return female!==male?(female?'女性':'男性'):'';};
 const oppositeGender=(text,gender)=>gender==='女性'?/男性|男声|男の声/.test(text||''):gender==='男性'?/女性|女声|女の声/.test(text||''):false;
+const alignStyleGender=(text,gender)=>{
+ if(!['女性','男性'].includes(gender)||!oppositeGender(text,gender))return text;
+ // Mixed gender descriptions cannot be rewritten safely.
+ if(textGender(text)!==(gender==='女性'?'男性':'女性'))return null;
+ const corrected=gender==='女性'?text.replace(/男性|男声|男の声/g,word=>({'男性':'女性','男声':'女声','男の声':'女の声'})[word]):text.replace(/女性|女声|女の声/g,word=>({'女性':'男性','女声':'男声','女の声':'男の声'})[word]);
+ return oppositeGender(corrected,gender)?null:corrected;
+};
 function groupedVoices(selectElement,values,genderOf,filter,preferred){
  const previous=preferred||selectElement.value;selectElement.replaceChildren();let choices=[];
  for(const group of ['女性','男性','任意']){
@@ -195,7 +202,9 @@ export function installDirectionEditor(node){
   }
   replaceOptions(source,sourceValues(),value('voice_mode'));let acceptedEngine=engine.value;
   engine.onchange=async()=>{const selected=engine.value;if(geminiEngine(selected)){let configured=false;try{configured=await geminiCredentialStatus();}catch{}if(!configured&&!await showGeminiCredentialDialog()){engine.value=acceptedEngine;update();return;}geminiConfigured=true;}acceptedEngine=engine.value;replaceOptions(source,sourceValues(),value('voice_mode'));update();};
-   source.onchange=gender.onchange=tone.onchange=custom.oninput=emotion.onchange=geminiDesignPreset.onchange=update;character.onchange=()=>{if(character.value==='自由入力')tone.value='自由入力';update();};update();
+   source.onchange=tone.onchange=custom.oninput=emotion.onchange=geminiDesignPreset.onchange=update;
+   gender.onchange=()=>{if(tone.value==='自由入力'){const aligned=alignStyleGender(custom.value,gender.value);if(aligned!==null&&aligned!==custom.value)custom.value=aligned;}update();};
+   character.onchange=()=>{if(character.value==='自由入力')tone.value='自由入力';update();};update();
   const close=()=>{d.close();d.remove();};d.addEventListener('cancel',e=>{e.preventDefault();close();});
   button('Cancel / キャンセル（変更を破棄）',d,close);
   button('Apply voice / この声の設定を採用',d,async()=>{
@@ -219,7 +228,9 @@ export function installDirectionEditor(node){
    }
    if(['女性','男性'].includes(gender.value)){
     if(oppositeGender(chosenStyle,gender.value)){
-     if(engine.value==='Qwen'&&source.value==='用意された声（Qwen）')chosenStyle='自然で聞き取りやすい日本語のナレーション。';
+     const aligned=alignStyleGender(chosenStyle,gender.value);
+     if(aligned!==null)chosenStyle=aligned;
+     else if(engine.value==='Qwen'&&source.value==='用意された声（Qwen）')chosenStyle='自然で聞き取りやすい日本語のナレーション。';
      else{note.textContent='声質・口調の性別指定が選択と異なります。どちらかを直してください。';return;}
     }
     if(!textGender(chosenStyle))chosenStyle=gender.value+'の声。'+chosenStyle;

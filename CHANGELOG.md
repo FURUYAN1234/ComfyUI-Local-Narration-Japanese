@@ -1,5 +1,10 @@
 # Changes / 更新履歴
 
+## v1.2.2
+- Added a private editable word-to-hiragana dictionary in reading review; entries are reused across sentences and saved outside workflow/ZIP. / 読み確認に編集可能な非公開の単語→ひらがな辞書を追加し、別の文でも再利用できるようにしました。辞書はワークフロー・ZIPに含めません。
+- Switching Female/Male in Voice settings aligns a clear opposite-gender term in the custom tone and keeps the rest of the description. / 声の性別切替時に自由入力の明確な逆性別語を揃え、その他の口調を保持します。
+- Apply also fixes a pre-existing clear mismatch, saves the selection and closes the dialog. Mixed gender instructions still require manual correction. / 既存の明確な食い違いも採用時に整合して保存・閉じます。男女が混在する指示は手動修正が必要です。
+
 ## v1.2.1
 
 - Added Auto, Female, Male and Any voice-gender choices to manual settings and AI consultation. Qwen speakers and Gemini studio/design voices are grouped by gender; contradictory style instructions are rejected. / 手動設定とAI相談に声の性別「自動・女性・男性・任意」を追加しました。Qwen話者とGemini公式声・声イメージを性別で整理し、矛盾する口調指定は拒否します。

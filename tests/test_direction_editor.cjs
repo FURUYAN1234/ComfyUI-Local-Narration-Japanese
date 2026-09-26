@@ -5,12 +5,12 @@ class E{
  replaceChildren(...es){this.children=[];es.forEach(e=>this.append(e));}querySelectorAll(t){return this.children.flatMap(e=>[...(e.tag===t?[e]:[]),...e.querySelectorAll(t)]);}querySelector(t){return this.children.find(e=>e.tag===t);}
  get lastElementChild(){return this.children.at(-1);}showModal(){}close(){}remove(){this.removed=true;}focus(){}scrollIntoView(){}
 }
-const body=new E('body'),events=[],requests=[];let resolveFetch,ext;const queued=[];
-const ctx={document:{body,createElement:t=>new E(t),querySelector:()=>null},app:{queuePrompt:async(...args)=>queued.push(args),graph:{setDirtyCanvas(){},links:{}},registerExtension:e=>ext=e},api:{dispatchEvent:e=>events.push(e.detail),fetchApi:(url,o={})=>{if(url.includes('gemini-credential-status'))return Promise.resolve({ok:true,json:async()=>({configured:false})});requests.push(JSON.parse(o.body));return new Promise(r=>resolveFetch=r);}},CustomEvent:class{constructor(type,o){this.detail=o.detail;}},crypto:require('crypto').webcrypto,Map,Date,queueMicrotask:f=>f(),setInterval:()=>1,clearInterval(){}};
+const body=new E('body'),events=[],requests=[];let resolveFetch,ext,geminiConfigured=false;const queued=[];
+const ctx={document:{body,createElement:t=>new E(t),querySelector:()=>null},app:{queuePrompt:async(...args)=>queued.push(args),graph:{setDirtyCanvas(){},links:{}},registerExtension:e=>ext=e},api:{dispatchEvent:e=>events.push(e.detail),fetchApi:(url,o={})=>{if(url.includes('gemini-credential-status'))return Promise.resolve({ok:true,json:async()=>({configured:geminiConfigured})});requests.push(JSON.parse(o.body));return new Promise(r=>resolveFetch=r);}},CustomEvent:class{constructor(type,o){this.detail=o.detail;}},crypto:require('crypto').webcrypto,Map,Date,queueMicrotask:f=>f(),setInterval:()=>1,clearInterval(){}};
 vm.createContext(ctx);const base=process.argv[2];
 for(const f of ['dialogue_blocks.js','direction_editor.js'])vm.runInContext(fs.readFileSync(base+f,'utf8').replace(/^import .*;\n/gm,'').replace(/export function /g,'function '),ctx);
 const vals={text:'元の台詞。',dialogue_blocks:'',purpose:'紹介',mode:'AIおまかせ',engine:'おまかせ',voice_mode:'デザイン',speaker:'Ono_anna',character:'自由指定',style:'',speed:0,seed:42,gemini_voice:'Kore｜芯のある安定した声',gemini_voice_design_preset:'落ち着いた女性ドキュメンタリー',gemini_voice_design:'',gemini_voice_id:'',gemini_emotion:'自動（原稿・口調から判断）',gemini_emotion_strength:'標準',gemini_emotion_custom:''};
-const widgets=Object.entries(vals).map(([name,value])=>({name,value,options:{values:name==='speaker'?['Ono_anna','Ryan']:name==='character'?['自由指定','落ち着いた女性ナレーター']:name==='gemini_voice'?['Kore｜芯のある安定した声','Puck｜陽気で弾む声']:name==='gemini_voice_design_preset'?['落ち着いた女性ドキュメンタリー','明るい女性ガイド','自由入力']:name==='gemini_emotion'?['自動（原稿・口調から判断）','喜び','自由入力']:name==='gemini_emotion_strength'?['控えめ','標準','強め']:[]}}));
+const widgets=Object.entries(vals).map(([name,value])=>({name,value,options:{values:name==='speaker'?['Ono_anna','Ryan']:name==='character'?['自由指定','落ち着いた女性ナレーター']:name==='gemini_voice'?['Kore｜芯のある安定した声','Laomedeia｜快活でテンポのよい声','Puck｜陽気で弾む声']:name==='gemini_voice_design_preset'?['落ち着いた女性ドキュメンタリー','明るい女性ガイド','自由入力']:name==='gemini_emotion'?['自動（原稿・口調から判断）','喜び','自由入力']:name==='gemini_emotion_strength'?['控えめ','標準','強め']:[]}}));
 const node={id:1,widgets,properties:{},comfyClass:'LocalNarrationDirection',addWidget(){return {};},addDOMWidget(name,type,panel,options){this.panel=panel;const w={name,options};widgets.push(w);return w;}};
 ext.nodeCreated(node);ctx.installDirectionEditor(node);
 const get=n=>widgets.find(w=>w.name===n),all=e=>e.children.flatMap(c=>[c,...all(c)]),find=(e,t)=>all(e).find(c=>c.textContent===t),field=(e,l)=>all(e).find(c=>c['aria-label']===l),tick=()=>new Promise(setImmediate);
@@ -46,7 +46,25 @@ assert(all(node.panel).some(e=>e.textContent.includes('声は未確定')));
  req=find(d,'Suggest / AIに提案してもらう').onclick();await tick();assert.equal(requests.at(-1).kind,'plan');
  resolveFetch({ok:true,json:async()=>({engine:'Qwen',style:'穏やかな声',speed:1.1,reason:'声のみ変更'})});await req;
  find(d,'Apply voice / 声の設定へ採用').onclick();assert.equal(get('engine').value,'Qwen');assert.equal(get('text').value,'台詞だけ変更しました。');
- find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();d=body.children.at(-1);const pending=find(d,'Suggest / AIに提案してもらう').onclick();find(d,'Cancel / キャンセル（変更を破棄）').onclick();resolveFetch({ok:true,json:async()=>({text:'遅い結果',engine:'Qwen',style:'別の声',speed:1})});await pending;
+ find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();d=body.children.at(-1);const pending=find(d,'Suggest / AIに提案してもらう').onclick();await tick();find(d,'Cancel / キャンセル（変更を破棄）').onclick();resolveFetch({ok:true,json:async()=>({text:'遅い結果',engine:'Qwen',style:'別の声',speed:1})});await pending;
  assert.equal(get('style').value,'穏やかな声');assert(events.some(e=>e.state==='running'));assert(events.some(e=>e.state==='complete'));assert(events.some(e=>e.state==='cancel'));
+ geminiConfigured=true;get('engine').value='Gemini 3.8 Flash TTS';get('voice_mode').value='用意された声（Gemini）';get('gemini_voice').value='Laomedeia｜快活でテンポのよい声';get('style').value='落ち着いた深みのある男声で、温かい口調。';node.properties.narrationVoiceGender='女性';
+ find(node.panel,'Voice settings / 声を確認・調整').onclick();d=body.children.at(-1);
+ assert.equal(field(d,'Voice gender / 声の性別（自動・女性・男性・任意）').value,'女性');
+ await find(d,'Apply voice / この声の設定を採用').onclick();
+ assert.equal(d.removed,true,'adoption closes the dialog');
+ assert.equal(get('style').value,'落ち着いた深みのある女声で、温かい口調。','old opposite-gender custom text is aligned without losing tone');
+ assert.equal(get('gemini_voice').value,'Laomedeia｜快活でテンポのよい声');
+ get('style').value='柔らかな男の声で話す。';node.properties.narrationVoiceGender='男性';
+ find(node.panel,'Voice settings / 声を確認・調整').onclick();d=body.children.at(-1);
+ const gender=field(d,'Voice gender / 声の性別（自動・女性・男性・任意）');gender.value='女性';gender.onchange();
+ assert.equal(field(d,'Custom voice and tone / 声質・口調の自由入力').value,'柔らかな女の声で話す。','gender switch updates the visible custom field');
+ await find(d,'Apply voice / この声の設定を採用').onclick();
+ assert.equal(d.removed,true);assert.equal(get('style').value,'柔らかな女の声で話す。');
+ get('style').value='男声と女声を混ぜる。';node.properties.narrationVoiceGender='女性';
+ find(node.panel,'Voice settings / 声を確認・調整').onclick();d=body.children.at(-1);
+ await find(d,'Apply voice / この声の設定を採用').onclick();
+ assert.notEqual(d.removed,true,'ambiguous mixed-gender instruction remains blocked');
+ assert.equal(get('style').value,'男声と女声を混ぜる。');find(d,'Cancel / キャンセル（変更を破棄）').onclick();
  console.log('PASS real editor modules: legacy preservation, 5-line proposal/edit/atomic adoption, sentence editor synchronization, preset/custom visibility, script-only/voice-only isolation, cancellation and late response discard');
 })().catch(e=>{console.error(e);process.exitCode=1;});
