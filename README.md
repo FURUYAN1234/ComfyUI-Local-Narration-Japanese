@@ -158,11 +158,14 @@ Real GPU runs covered Irodori, Qwen preset/reference, long-text voice reuse and 
 Gemini request construction, Flash/Flash-Lite routing, API-key redaction, credential-dialog closure, 30-voice selection and emotion settings have automated coverage. Live API generation completed for both Gemini models through the normal ComfyUI path, and both results appeared in the final playback/save node. / Geminiの要求形式、Flash/Flash-Lite分岐、APIキー秘匿、認証窓の自動終了、30音声選択、感情設定は自動検査しています。Geminiの2モデルは通常のComfyUI経路で実API生成し、どちらも最終の再生・保存ノードへ表示されることを確認しています。
 Pronunciation still requires listening; ASR matching alone does not prove naturalness. / 発音は試聴が必要です。ASR一致だけで自然さを保証しません。
 The initial environment setup was checked with existing compatible environments; a different PC may require CUDA or system-package adjustments. / 初期設定は既存の互換環境を指定して検証しており、別PCではCUDAやシステムパッケージの調整が必要な場合があります。
+For v1.2.3, the sentence-edit button text is vertically centered in the compact first-node layout. / v1.2.3では、最初のノードの「台詞を1文ずつ編集」ボタンの文字を縦中央に揃えました。
 For v1.2.2, the reading review also includes a private per-word user dictionary. Add, edit or delete a word and its hiragana reading; matching words take priority over sentence memory in new conversions. During an open review, updated suggestions replace only rows the user has not manually edited. / v1.2.2では読み確認に非公開の単語辞書を追加しました。単語とひらがなの読みを登録・編集・削除できます。辞書にある語は新しい読み変換で文単位の記憶より優先し、確認中は手修正していない行だけ候補を更新します。
 For v1.2.2, changing Female/Male in Voice settings updates an opposite-gender term in the custom tone while keeping the rest of the text. The Apply button also aligns a pre-existing unambiguous mismatch, saves the selected settings and closes the dialog. A mixed male/female instruction is still held for manual correction. This behavior was checked in the live ComfyUI editor and regression tests. / v1.2.2では、声の性別を切り替えると自由入力の逆の性別語だけが更新され、他の口調は保持されます。既に食い違った設定も、明確に一方の性別だけなら「採用」で整合して保存・閉じます。男女が混在する指示は手動修正を求めます。ComfyUI実画面と回帰テストで確認しました。
 For v1.2.1, manual Female/Male/Any/Auto menus and both gender-specific Qwen preset voices were checked in the live ComfyUI workflow. Male and female AI proposals and an automatic ComfyUI consultation completed; opposite-gender instructions were rejected. The two short Qwen test MP3 files were generated and saved, but their audible quality was not assessed. / v1.2.1では、手動の女性・男性・任意・自動メニューを実際のComfyUI画面で確認し、Qwenの男女話者で短いMP3を生成・保存しました。男女指定のAI提案とComfyUI経由の自動相談も完了し、矛盾する性別指定は拒否されました。音声の聴感品質は未評価です。
 
 ## Version / バージョン
+
+v1.2.3: centered the sentence-edit button label in the first node. / v1.2.3では最初のノードの台詞編集ボタンの文字位置を修正しました。
 
 v1.2.2: fixed Voice settings adoption when the custom tone still names the previously selected gender, and added a private per-word reading dictionary. / v1.2.2では、自由入力の口調に前の性別が残った場合も声設定を採用できるようにし、非公開の単語読み辞書を追加しました。
 

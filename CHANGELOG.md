@@ -1,5 +1,8 @@
 # Changes / 更新履歴
 
+## v1.2.3
+- Centered the sentence-edit button label vertically in the first node. / 最初のノードの台詞編集ボタンの文字を縦中央に揃えました。
+
 ## v1.2.2
 - Added a private editable word-to-hiragana dictionary in reading review; entries are reused across sentences and saved outside workflow/ZIP. / 読み確認に編集可能な非公開の単語→ひらがな辞書を追加し、別の文でも再利用できるようにしました。辞書はワークフロー・ZIPに含めません。
 - Switching Female/Male in Voice settings aligns a clear opposite-gender term in the custom tone and keeps the rest of the description. / 声の性別切替時に自由入力の明確な逆性別語を揃え、その他の口調を保持します。

@@ -124,7 +124,7 @@ export function installDirectionEditor(node){
  button('Clear / クリア',toolbar,()=>{if(!preview.value)return;preview.value='';commit();preview.focus();});
  const undo=button('Undo / 戻す',toolbar,()=>moveHistory(-1));
  const redo=button('Redo / やり直す',toolbar,()=>moveHistory(1));
- style(button('Edit script / 台詞を1文ずつ編集（＋／－）',scripts,()=>node.narrationEditSentences?.()),{flexShrink:0});
+ style(button('Edit script / 台詞を1文ずつ編集（＋／－）',scripts,()=>node.narrationEditSentences?.()),{display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,minHeight:'32px',padding:'4px 8px',lineHeight:'1.3',textAlign:'center',boxSizing:'border-box'});
  for(const b of toolbar.children)style(b,{padding:'3px 5px',font:'10px/1.4 system-ui',minHeight:'24px',borderRadius:'0',border:'1px solid #606773',background:'#30363f',color:'#fff',boxShadow:'none',appearance:'none',whiteSpace:'nowrap'});
  const voices=element('section','',root);style(voices,{background:'#151920',padding:'10px',borderRadius:'7px',flexShrink:0});
   element('strong','2. Voice / 読み上げる声',voices);
