@@ -21,6 +21,26 @@ function modal(title){
  element('h2',title,d);document.body.append(d);d.showModal();return d;
 }
 const geminiEngine=value=>value==='Gemini 3.8 Flash TTS'||value==='Gemini 3.8 Flash-Lite TTS';
+const voiceGenders=['自動','女性','男性','任意'];
+const qwenGender={Ono_anna:'女性',Serena:'女性',Sohee:'女性',Vivian:'女性',Aiden:'男性',Dylan:'男性',Eric:'男性',Ryan:'男性',Uncle_fu:'男性'};
+// The same named studio voices are classified by Google Cloud's published voice list.
+const geminiFemale=new Set(['Achernar','Aoede','Autonoe','Callirrhoe','Despina','Erinome','Gacrux','Kore','Laomedeia','Leda','Pulcherrima','Sulafat','Vindemiatrix','Zephyr']);
+const geminiMale=new Set(['Achird','Algenib','Algieba','Alnilam','Charon','Enceladus','Fenrir','Iapetus','Orus','Puck','Rasalgethi','Sadachbia','Sadaltager','Schedar','Umbriel','Zubenelgenubi']);
+const studioGender=label=>{const name=label.split('｜')[0];return geminiFemale.has(name)?'女性':geminiMale.has(name)?'男性':'任意';};
+const presetGender=label=>label.includes('女性')?'女性':label.includes('男性')?'男性':'任意';
+const characterGender=label=>label==='元気なアニメキャラクター'?'女性':label==='クールなアニメキャラクター'?'男性':presetGender(label);
+const textGender=text=>{const female=/女性|女声|女の声/.test(text||''),male=/男性|男声|男の声/.test(text||'');return female!==male?(female?'女性':'男性'):'';};
+const oppositeGender=(text,gender)=>gender==='女性'?/男性|男声|男の声/.test(text||''):gender==='男性'?/女性|女声|女の声/.test(text||''):false;
+function groupedVoices(selectElement,values,genderOf,filter,preferred){
+ const previous=preferred||selectElement.value;selectElement.replaceChildren();let choices=[];
+ for(const group of ['女性','男性','任意']){
+  const items=values.filter(item=>genderOf(item)===group&&(filter==='任意'||filter==='自動'||group===filter||group==='任意'&&['自由入力','標準／口調で指定'].includes(item)));
+  if(!items.length)continue;const parent=document.createElement('optgroup');parent.label=group==='任意'?'共通・自由指定':group+'の声';selectElement.append(parent);
+  for(const item of items){const option=document.createElement('option');option.value=item;option.textContent=item;parent.append(option);choices.push(item);}
+ }
+ const fallback=filter==='男性'&&choices.includes('Charon｜情報を伝える解説声')?'Charon｜情報を伝える解説声':choices[0];
+ selectElement.value=choices.includes(previous)?previous:fallback||'';
+}
 let geminiCredentialRevision=0;
 api.addEventListener?.('local_narration.gemini_credential_changed',()=>{geminiCredentialRevision+=1;});
 function announceGeminiCredential(configured){api.dispatchEvent(new CustomEvent('local_narration.gemini_credential_changed',{detail:{configured:!!configured}}));}
@@ -58,7 +78,7 @@ export function installDirectionEditor(node){
  const set=(n,v)=>{const w=get(n);if(w){w.value=v;w.callback?.(v);}};
  const props=()=>node.properties ||= {};
  const text=()=>{try{return JSON.parse(value('dialogue_blocks')).blocks.map(b=>b.text).join('\n');}catch{return value('text')||'';}};
-  const snapshot=()=>JSON.stringify(['text','dialogue_blocks','purpose','mode','engine','voice_mode','speaker','character','style','speed','gemini_voice','gemini_voice_design_preset','gemini_voice_design','gemini_voice_id','gemini_emotion','gemini_emotion_strength','gemini_emotion_custom'].map(value));
+ const snapshot=()=>JSON.stringify([...['text','dialogue_blocks','purpose','mode','engine','voice_mode','speaker','character','style','speed','gemini_voice','gemini_voice_design_preset','gemini_voice_design','gemini_voice_id','gemini_emotion','gemini_emotion_strength','gemini_emotion_custom'].map(value),props().narrationVoiceGender]);
  const dirty=()=>{app.graph.setDirtyCanvas(true,true);sync();};
  const reference=()=>{const id=node.inputs?.find(i=>i.name==='reference_audio')?.link;const link=app.graph.links?.[id];const n=link&&app.graph.getNodeById(link.origin_id);return n?.widgets?.find(w=>w.name==='enabled')?.value;};
  const ready=()=>value('mode')==='手動'||(value('mode')==='AI提案＋手動上書き'&&value('engine')!=='おまかせ'&&value('style')?.trim()&&value('speed'));
@@ -136,15 +156,17 @@ export function installDirectionEditor(node){
   const initial=snapshot(),d=modal('Voice settings / 読み上げる声を決める');
   const engines=['Irodori','Qwen','Gemini 3.8 Flash TTS','Gemini 3.8 Flash-Lite TTS'];
   const engine=select('Model / 音声モデル',d,engines,engines.includes(value('engine'))?value('engine'):'Irodori');
+  const gender=select('Voice gender / 声の性別（自動・女性・男性・任意）',d,voiceGenders,props().narrationVoiceGender||textGender(value('style'))||'自動');
   const source=select('Voice source / 声の作り方',d,[],value('voice_mode'));
-  const speaker=select('Speaker / 話者',d,get('speaker').options.values,value('speaker'));
+  const speakerValues=[...get('speaker').options.values],speaker=select('Speaker / 話者',d,speakerValues,value('speaker'));
   const geminiVoiceValues=[...get('gemini_voice').options.values],selectedGeminiVoice=geminiVoiceValues.includes(value('gemini_voice'))?value('gemini_voice'):(geminiVoiceValues[0]||'');
   const geminiVoice=select('Gemini studio voice / 公式スタジオボイス（30種類）',d,geminiVoiceValues,selectedGeminiVoice);
   const geminiDesignPresetValues=[...get('gemini_voice_design_preset').options.values],selectedDesignPreset=geminiDesignPresetValues.includes(value('gemini_voice_design_preset'))?value('gemini_voice_design_preset'):(geminiDesignPresetValues[0]||'');
   const geminiDesignPreset=select('Voice design preset / 声イメージプリセット',d,geminiDesignPresetValues,selectedDesignPreset);
   const geminiDesign=input('Gemini custom voice / 新しく作る声の特徴',d,value('gemini_voice_design')||'');geminiDesign.placeholder='例：落ち着いた30代の女性。中低域が豊かで、明瞭な標準語。';
   const geminiId=input('Gemini saved Voice ID / 保存済みVoice ID',d,value('gemini_voice_id')||'','input');geminiId.placeholder='voice_...';
-  const character=select('Character / 声のキャラクター',d,[...get('character').options.values.map(v=>v==='自由指定'?'標準／口調で指定':v),'自由入力'],value('character')==='自由指定'?'標準／口調で指定':value('character'));
+  const characterValues=[...get('character').options.values.map(v=>v==='自由指定'?'標準／口調で指定':v),'自由入力'];
+  const character=select('Character / 声のキャラクター',d,characterValues,value('character')==='自由指定'?'標準／口調で指定':value('character'));
   const tone=select('Tone / 口調',d,[...Object.keys(tonePresets),'自由入力'],Object.keys(tonePresets).find(k=>tonePresets[k]===value('style'))||(value('style')?'自由入力':'標準'));
   const custom=input('Custom voice and tone / 声質・口調の自由入力',d,value('style')||'');
   const emotion=select('Emotion / 感情',d,get('gemini_emotion').options.values,value('gemini_emotion'));
@@ -159,6 +181,12 @@ export function installDirectionEditor(node){
   function replaceOptions(selectElement,values,preferred){selectElement.replaceChildren();for(const item of values){const option=element('option',item,selectElement);option.value=item;}selectElement.value=values.includes(preferred)?preferred:values[0];}
   function update(){
    const gemini=geminiEngine(engine.value),ref=!!reference(),allowed=sourceValues();if(!allowed.includes(source.value))replaceOptions(source,allowed,value('voice_mode'));
+   const filter=gender.value==='自動'?textGender(tone.value==='自由入力'?custom.value:value('style'))||'任意':gender.value;
+   groupedVoices(speaker,speakerValues,v=>qwenGender[v]||'任意',filter,speaker.value);
+   groupedVoices(geminiVoice,geminiVoiceValues,studioGender,filter,geminiVoice.value);
+   groupedVoices(geminiDesignPreset,geminiDesignPresetValues,presetGender,filter,geminiDesignPreset.value);
+   groupedVoices(character,characterValues,characterGender,filter,character.value);
+   gender.parentElement.hidden=ref&&!gemini;
    source.parentElement.hidden=engine.value==='Irodori'||(ref&&!gemini);speaker.parentElement.hidden=engine.value!=='Qwen'||source.value!=='用意された声（Qwen）'||ref;
     geminiVoice.parentElement.hidden=!gemini||source.value!=='用意された声（Gemini）';geminiDesignPreset.parentElement.hidden=!gemini||source.value!=='新しい声をデザイン（Gemini）';geminiDesign.parentElement.hidden=geminiDesignPreset.parentElement.hidden||geminiDesignPreset.value!=='自由入力';geminiId.parentElement.hidden=!gemini||source.value!=='保存済みVoice ID（Gemini）';
    const design=!gemini&&!(ref&&engine.value==='Qwen')&&!(engine.value==='Qwen'&&source.value==='用意された声（Qwen）');character.parentElement.hidden=!design;tone.parentElement.hidden=engine.value==='Qwen'&&(ref||source.value==='用意された声（Qwen）');custom.parentElement.hidden=tone.parentElement.hidden||tone.value!=='自由入力';
@@ -167,7 +195,7 @@ export function installDirectionEditor(node){
   }
   replaceOptions(source,sourceValues(),value('voice_mode'));let acceptedEngine=engine.value;
   engine.onchange=async()=>{const selected=engine.value;if(geminiEngine(selected)){let configured=false;try{configured=await geminiCredentialStatus();}catch{}if(!configured&&!await showGeminiCredentialDialog()){engine.value=acceptedEngine;update();return;}geminiConfigured=true;}acceptedEngine=engine.value;replaceOptions(source,sourceValues(),value('voice_mode'));update();};
-   source.onchange=tone.onchange=emotion.onchange=geminiDesignPreset.onchange=update;character.onchange=()=>{if(character.value==='自由入力')tone.value='自由入力';update();};update();
+   source.onchange=gender.onchange=tone.onchange=custom.oninput=emotion.onchange=geminiDesignPreset.onchange=update;character.onchange=()=>{if(character.value==='自由入力')tone.value='自由入力';update();};update();
   const close=()=>{d.close();d.remove();};d.addEventListener('cancel',e=>{e.preventDefault();close();});
   button('Cancel / キャンセル（変更を破棄）',d,close);
   button('Apply voice / この声の設定を採用',d,async()=>{
@@ -181,13 +209,32 @@ export function installDirectionEditor(node){
     if(emotion.value==='自由入力'&&!emotionCustom.value.trim()){note.textContent='感情・演技の指示を入力してください。';return;}
     if(!await ensureGeminiCredential())return;geminiConfigured=true;
    }
-    set('mode','手動');set('engine',engine.value);set('voice_mode',source.value);set('speaker',speaker.value);set('character',geminiEngine(engine.value)?'自由指定':['標準／口調で指定','自由入力'].includes(character.value)?'自由指定':character.value);set('style',tone.value==='自由入力'?custom.value.trim():tonePresets[tone.value]);set('gemini_voice',geminiVoice.value);set('gemini_voice_design_preset',geminiDesignPreset.value);set('gemini_voice_design',geminiDesign.value.trim());set('gemini_voice_id',geminiId.value.trim());set('gemini_emotion',emotion.value);set('gemini_emotion_strength',emotionStrength.value);set('gemini_emotion_custom',emotionCustom.value.trim());set('speed',+speed.value);set('seed',+seed.value);if(seedMode)set('control_after_generate',seedMode.value);dirty();close();
+   let chosenStyle=tone.value==='自由入力'?custom.value.trim():tonePresets[tone.value];
+   if(gender.value==='任意'){
+    const selected=engine.value==='Qwen'&&source.value==='用意された声（Qwen）'?qwenGender[speaker.value]:geminiEngine(engine.value)&&source.value==='用意された声（Gemini）'?studioGender(geminiVoice.value):'';
+    if(selected&&oppositeGender(chosenStyle,selected)){
+     if(engine.value==='Qwen')chosenStyle='自然で聞き取りやすい日本語のナレーション。';
+     else{note.textContent='選んだ公式声と声質・口調の性別が異なります。声質・口調を直してください。';return;}
+    }
+   }
+   if(['女性','男性'].includes(gender.value)){
+    if(oppositeGender(chosenStyle,gender.value)){
+     if(engine.value==='Qwen'&&source.value==='用意された声（Qwen）')chosenStyle='自然で聞き取りやすい日本語のナレーション。';
+     else{note.textContent='声質・口調の性別指定が選択と異なります。どちらかを直してください。';return;}
+    }
+    if(!textGender(chosenStyle))chosenStyle=gender.value+'の声。'+chosenStyle;
+   }
+   let designText=geminiDesign.value.trim();
+   if(source.value==='新しい声をデザイン（Gemini）'&&geminiDesignPreset.value==='自由入力'&&['女性','男性'].includes(gender.value)&&oppositeGender(designText,gender.value)){note.textContent='声の特徴の性別指定が選択と異なります。';return;}
+   if(source.value==='新しい声をデザイン（Gemini）'&&geminiDesignPreset.value==='自由入力'&&['女性','男性'].includes(gender.value)&&!textGender(designText))designText=gender.value+'の声。'+designText;
+   set('mode','手動');set('engine',engine.value);set('voice_mode',source.value);set('speaker',speaker.value);set('character',geminiEngine(engine.value)?'自由指定':['標準／口調で指定','自由入力'].includes(character.value)?'自由指定':character.value);set('style',chosenStyle);set('gemini_voice',geminiVoice.value);set('gemini_voice_design_preset',geminiDesignPreset.value);set('gemini_voice_design',designText);set('gemini_voice_id',geminiId.value.trim());set('gemini_emotion',emotion.value);set('gemini_emotion_strength',emotionStrength.value);set('gemini_emotion_custom',emotionCustom.value.trim());set('speed',+speed.value);set('seed',+seed.value);props().narrationVoiceGender=gender.value;if(seedMode)set('control_after_generate',seedMode.value);dirty();close();
   });
  }
  function consult(){
   const initial=snapshot(),original=text(),d=modal('AI consultation / 台詞と声を相談して作る');
   style(d,{margin:'180px auto 24px',maxHeight:'calc(100vh - 204px)'});
   const target=select('Create / AIに作ってもらうもの',d,Object.keys(modes),'台詞を作る＋声もAIが提案');
+  const desiredGender=select('Voice gender / 声の性別',d,voiceGenders,props().narrationVoiceGender||textGender(value('style'))||'自動');
   const purpose=select('Purpose / 用途の例',d,Object.keys(purposePresets),'自由入力');
   const brief=input('Request / 作りたい内容・希望',d,props().narrationBrief||value('purpose')||'');
   brief.placeholder='例：テラフォーマーについて、初心者にも分かる紹介と考察を作って。';
@@ -204,6 +251,7 @@ export function installDirectionEditor(node){
    const voice=input('Proposed voice / 声質・口調の提案（編集可）',draft,'');
    const proposedPresetValues=[...get('gemini_voice_design_preset').options.values].filter(v=>v!=='自由入力');
    const proposedPreset=select('Proposed Gemini voice / Gemini声イメージ',draft,proposedPresetValues,proposedPresetValues[0]);
+   const refreshProposedPreset=()=>groupedVoices(proposedPreset,proposedPresetValues,presetGender,['女性','男性'].includes(desiredGender.value)?desiredGender.value:'任意',proposedPreset.value);
    const speed=input('Proposed speed / 提案話速',draft,1,'input');speed.type='number';speed.min=.5;speed.max=2;speed.step=.05;
    let alive=true,busy=false,timer,proposedKind,proposedBrief,consultCredentialChanged=()=>{};
    const close=()=>{notify(busy?'cancel':'detach',busy?'相談を閉じました。提案は採用しません / Consultation dismissed':'',d);alive=false;clearInterval(timer);api.removeEventListener?.('local_narration.gemini_credential_changed',consultCredentialChanged);d.close();d.remove();};
@@ -211,7 +259,7 @@ export function installDirectionEditor(node){
   button('Cancel / キャンセル（変更を破棄）',footer,close);
   const apply=button('Apply / 提案を台詞・声へ採用',footer,()=>{});apply.disabled=true;
    propose=button('Suggest / AIに提案してもらう',footer,()=>{});
-   const invalidate=()=>{draft.hidden=true;apply.disabled=true;};target.onchange=brief.oninput=invalidate;
+   const invalidate=()=>{draft.hidden=true;apply.disabled=true;desiredGender.parentElement.hidden=modes[target.value]==='script';};target.onchange=brief.oninput=invalidate;desiredGender.onchange=()=>{invalidate();refreshProposedPreset();};refreshProposedPreset();invalidate();
    consultCredentialChanged=event=>{providerInfo.textContent=event.detail?.configured?'AI音声候補：Irodori / Qwen / Gemini 3.8 Flash / Flash-Lite（API登録済み）':'AI音声候補：Irodori / Qwen（GeminiはAPI登録後に候補へ追加）';invalidate();local.textContent='API登録状態が変わりました。「AIに提案してもらう」で頭から選び直してください。';};api.addEventListener?.('local_narration.gemini_credential_changed',consultCredentialChanged);
   purpose.onchange=()=>{if(purpose.value!=='自由入力')brief.value=purposePresets[purpose.value];invalidate();};
   d.addEventListener('cancel',e=>{e.preventDefault();close();});
@@ -220,7 +268,8 @@ export function installDirectionEditor(node){
     const kind=modes[target.value];busy=true;propose.disabled=target.disabled=brief.disabled=purpose.disabled=apply.disabled=true;draft.hidden=true;const requestCredentialRevision=geminiCredentialRevision,requestGeminiConfigured=await refreshProviderInfo();
    const start=Date.now(),update=()=>local.textContent='AIに相談中 / 経過 '+Math.floor((Date.now()-start)/1000)+'秒';update();timer=setInterval(update,1000);notify('running','AIに相談中 / Consulting AI',d);
    try{
-    const response=await api.fetchApi('/local-narration/consult',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,text:original,brief:brief.value,seed:value('seed')})});
+    const genderBrief=kind==='script'?brief.value:brief.value+'\n【声の性別】'+desiredGender.value;
+    const response=await api.fetchApi('/local-narration/consult',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,text:original,brief:genderBrief,seed:value('seed')})});
      const data=await response.json();if(!response.ok)throw Error(data.error||'相談に失敗しました。');if(!alive)return;
      let currentGeminiConfigured=false;try{currentGeminiConfigured=await geminiCredentialStatus();}catch{}if(requestCredentialRevision!==geminiCredentialRevision||requestGeminiConfigured!==currentGeminiConfigured)throw Error('API登録状態が相談中に変わりました。もう一度「AIに提案してもらう」を押してください。');
     if(kind!=='plan'&&!scriptBlocks(data.text||'').length)throw Error('台詞の提案が空です。');
@@ -240,10 +289,11 @@ export function installDirectionEditor(node){
    const blocks=kind==='plan'?null:scriptBlocks(script.value);
    if(blocks&&(!blocks.length||blocks.length>100||blocks.some(b=>b.text.length>10000))){local.textContent='台詞は1〜100文、各1万文字以内で入力してください。';return;}
    if(kind!=='script'&&(!voice.value.trim()||+speed.value<.5||+speed.value>2||!Number.isFinite(+speed.value))){local.textContent='声の指示と話速を確認してください。';return;}
+   if(kind!=='script'&&['女性','男性'].includes(desiredGender.value)){if(oppositeGender(voice.value,desiredGender.value)){local.textContent='提案した声質の性別が選択と異なります。声質を修正してください。';return;}if(geminiEngine(engine.value)&&presetGender(proposedPreset.value)!==desiredGender.value){local.textContent='Geminiの声イメージが性別指定と一致しません。';return;}}
    if(kind!=='script'&&reference()){local.textContent='参照音声がONです。提案した声を使う場合は参照をOFFにしてから相談してください。';return;}
    if(kind!=='script'&&geminiEngine(engine.value)&&!await ensureGeminiCredential()){local.textContent='Gemini APIキーを登録してください。';return;}
    if(blocks)saveScript(node,{blocks,target:''});
-    if(kind!=='script'){set('mode','手動');set('engine',engine.value);set('voice_mode',geminiEngine(engine.value)?'新しい声をデザイン（Gemini）':'デザイン');set('character','自由指定');set('style',voice.value.trim());if(geminiEngine(engine.value)){set('gemini_voice_design_preset',proposedPreset.value);set('gemini_voice_design','');}set('gemini_emotion','自動（原稿・口調から判断）');set('speed',+speed.value);}
+    if(kind!=='script'){set('mode','手動');set('engine',engine.value);set('voice_mode',geminiEngine(engine.value)?'新しい声をデザイン（Gemini）':'デザイン');set('character','自由指定');set('style',['女性','男性'].includes(desiredGender.value)&&!textGender(voice.value)?desiredGender.value+'の声。'+voice.value.trim():voice.value.trim());if(geminiEngine(engine.value)){set('gemini_voice_design_preset',proposedPreset.value);set('gemini_voice_design','');}set('gemini_emotion','自動（原稿・口調から判断）');set('speed',+speed.value);props().narrationVoiceGender=desiredGender.value;}
    props().narrationBrief=proposedBrief;set('purpose',proposedBrief);dirty();close();
   };
  }

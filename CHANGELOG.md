@@ -1,5 +1,10 @@
 # Changes / 更新履歴
 
+## v1.2.1
+
+- Added Auto, Female, Male and Any voice-gender choices to manual settings and AI consultation. Qwen speakers and Gemini studio/design voices are grouped by gender; contradictory style instructions are rejected. / 手動設定とAI相談に声の性別「自動・女性・男性・任意」を追加しました。Qwen話者とGemini公式声・声イメージを性別で整理し、矛盾する口調指定は拒否します。
+- Extended the local AI consultation response timeout and verified the ordinary ComfyUI path with short male and female Qwen outputs. / ローカルAI相談の応答待ち上限を延長し、ComfyUIの通常経路でQwenの男女話者による短い音声出力を確認しました。
+
 ## v1.2.0
 
 - Added optional Gemini 3.8 Flash TTS and Flash-Lite TTS to the normal planning, reading-review, generation and saved-audio path. / Gemini 3.8 Flash TTSとFlash-Lite TTSを任意選択できる音声エンジンとして、通常の企画・読み確認・生成・音声保存経路へ追加しました。

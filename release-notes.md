@@ -1,3 +1,13 @@
+# v1.2.1 — Voice gender choices / 声の性別選択
+
+Manual Voice settings and AI consultation now offer Auto, Female, Male and Any. Qwen's nine built-in speakers and Gemini's 30 studio voices are grouped by gender; the voice-design menus follow the same selection. Any shows both groups, while Auto lets AI choose or follows an explicit tone in manual settings. / 手動の声設定とAI相談に「自動・女性・男性・任意」を追加しました。Qwenの既定9話者とGeminiの公式30声を性別別に整理し、声イメージのメニューも同じ選択に合わせます。任意は両方を表示し、自動はAIの提案または手動設定の口調指定を参照します。
+
+The dialog rejects an opposite-gender tone or AI proposal. A saved Voice ID or reference recording retains its own voice. Local AI consultation now allows more time for slow responses. / 性別と矛盾する口調やAI提案は採用前に拒否します。保存済みVoice IDや参照音声は、その音声自体の声を使用します。時間のかかるローカルAI相談は応答待ち上限を延長しました。
+
+The normal ComfyUI path completed short Qwen MP3 outputs with a male and a female built-in speaker. Manual choices and automatic AI consultation were also verified in the live interface. Audible delivery and pronunciation were not assessed. / ComfyUIの通常経路で、Qwenの男女それぞれの既定話者による短いMP3出力まで確認しました。手動選択とAI相談の自動選択も実画面で検証しています。声の聴感・発音品質は未評価です。
+
+The optional Gemini engines from v1.2.0 remain available and still require a user-provided API key; local Irodori/Qwen does not. The API key stays in process memory and is not included in the workflow or ZIP. / v1.2.0で追加したGeminiは任意のままで、使用時だけAPIキーが必要です。ローカルのIrodori・Qwenには不要です。APIキーはプロセスメモリにだけ保持し、ワークフローやZIPには含めません。
+
 # v1.2.0 — Optional Gemini TTS / Gemini TTSの任意選択
 
 Gemini 3.8 Flash TTS and Flash-Lite TTS are now optional engines in the same ComfyUI narration workflow as local Irodori and Qwen3-TTS. Both Gemini engines use the normal adopted-script, mandatory reading-review, generation and final playback/save path. / Gemini 3.8 Flash TTSとFlash-Lite TTSを、ローカルのIrodori・Qwen3-TTSと同じComfyUIナレーションワークフローで任意選択できるようにしました。どちらのGeminiも、採用済み原稿、必須の読み確認、音声生成、最終ノードの再生・保存まで同じ経路を通ります。
