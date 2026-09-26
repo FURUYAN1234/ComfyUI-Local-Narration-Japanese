@@ -241,17 +241,18 @@ export function installDirectionEditor(node){
    set('mode','手動');set('engine',engine.value);set('voice_mode',source.value);set('speaker',speaker.value);set('character',geminiEngine(engine.value)?'自由指定':['標準／口調で指定','自由入力'].includes(character.value)?'自由指定':character.value);set('style',chosenStyle);set('gemini_voice',geminiVoice.value);set('gemini_voice_design_preset',geminiDesignPreset.value);set('gemini_voice_design',designText);set('gemini_voice_id',geminiId.value.trim());set('gemini_emotion',emotion.value);set('gemini_emotion_strength',emotionStrength.value);set('gemini_emotion_custom',emotionCustom.value.trim());set('speed',+speed.value);set('seed',+seed.value);props().narrationVoiceGender=gender.value;if(seedMode)set('control_after_generate',seedMode.value);dirty();close();
   });
  }
+ let consultationInFlight=null;
  function consult(){
-  const initial=snapshot(),original=text(),d=modal('AI consultation / 台詞と声を相談して作る');
+  if(consultationInFlight){consultationInFlight();return;}
+  const initial=snapshot(),original=text(),d=modal('AI consultation / 台詞・声をAIに相談');
   style(d,{margin:'180px auto 24px',maxHeight:'calc(100vh - 204px)'});
-  const target=select('Create / AIに作ってもらうもの',d,Object.keys(modes),'台詞を作る＋声もAIが提案');
+  const target=select('Create / AIに作ってもらうもの',d,Object.keys(modes),ready()?'台詞を作る・直す（声は変更しない）':'台詞を作る＋声もAIが提案');
   const desiredGender=select('Voice gender / 声の性別',d,voiceGenders,props().narrationVoiceGender||textGender(value('style'))||'自動');
-  const purpose=select('Purpose / 用途の例',d,Object.keys(purposePresets),'自由入力');
-  const brief=input('Request / 作りたい内容・希望',d,props().narrationBrief||value('purpose')||'');
+  const purpose=select('Example / 依頼文の例（選ぶと下欄に入力）',d,Object.keys(purposePresets),'自由入力');
+  const brief=input('Request / AIへの依頼文（この内容を送信）',d,props().narrationBrief||value('purpose')||'');
   brief.placeholder='例：テラフォーマーについて、初心者にも分かる紹介と考察を作って。';
-  element('small','Script length / 文数指定がなければ5文で構成。1文だけなどの指定もできます。',d);
-   purpose.onchange=()=>{if(purpose.value!=='自由入力')brief.value=purposePresets[purpose.value];};
-   element('p','選んだ項目だけをAIが提案します。「採用」で反映されます。採用済みの声を確認・変更する場合は、ノードの「声を確認・調整」を使います。',d);
+  const lengthHint=element('small','Script length / 文数指定がなければ5文で構成。1文だけなどの指定もできます。',d);
+   element('p',ready()?'現在の声は保持します。声もAIに作り直してほしい場合だけ、上の項目を切り替えてください。提案は「採用」で反映されます。':'選んだ項目だけをAIが提案します。「採用」で反映されます。採用済みの声を確認・変更する場合は、ノードの「声を確認・調整」を使います。',d);
    const providerInfo=element('p','AIの音声候補を確認中…',d);style(providerInfo,{padding:'8px 10px',background:'#151920',borderRadius:'6px'});
    const refreshProviderInfo=async()=>{let configured=false;try{configured=await geminiCredentialStatus();}catch{}providerInfo.textContent=configured?'AI音声候補：Irodori / Qwen / Gemini 3.8 Flash / Flash-Lite（API登録済み）':'AI音声候補：Irodori / Qwen（GeminiはAPI登録後に候補へ追加）';return configured;};refreshProviderInfo();
    const local=element('p','',d);local.setAttribute('role','status');
@@ -265,19 +266,20 @@ export function installDirectionEditor(node){
    const refreshProposedPreset=()=>groupedVoices(proposedPreset,proposedPresetValues,presetGender,['女性','男性'].includes(desiredGender.value)?desiredGender.value:'任意',proposedPreset.value);
    const speed=input('Proposed speed / 提案話速',draft,1,'input');speed.type='number';speed.min=.5;speed.max=2;speed.step=.05;
    let alive=true,busy=false,timer,proposedKind,proposedBrief,consultCredentialChanged=()=>{};
-   const close=()=>{notify(busy?'cancel':'detach',busy?'相談を閉じました。提案は採用しません / Consultation dismissed':'',d);alive=false;clearInterval(timer);api.removeEventListener?.('local_narration.gemini_credential_changed',consultCredentialChanged);d.close();d.remove();};
+   const reopen=()=>{if(alive&&!d.open)d.showModal();};
+   const close=()=>{if(consultationInFlight===reopen)consultationInFlight=null;notify(busy?'cancel':'detach',busy?'相談を閉じました。提案は採用しません / Consultation dismissed':'',d);alive=false;clearInterval(timer);api.removeEventListener?.('local_narration.gemini_credential_changed',consultCredentialChanged);d.close();d.remove();};
   const footer=element('div','',d);style(footer,{display:'flex',flexWrap:'wrap',justifyContent:'flex-end',gap:'10px',marginTop:'14px'});
   button('Cancel / キャンセル（変更を破棄）',footer,close);
   const apply=button('Apply / 提案を台詞・声へ採用',footer,()=>{});apply.disabled=true;
    propose=button('Suggest / AIに提案してもらう',footer,()=>{});
-   const invalidate=()=>{draft.hidden=true;apply.disabled=true;desiredGender.parentElement.hidden=modes[target.value]==='script';};target.onchange=brief.oninput=invalidate;desiredGender.onchange=()=>{invalidate();refreshProposedPreset();};refreshProposedPreset();invalidate();
+   const invalidate=()=>{draft.hidden=true;apply.disabled=true;desiredGender.parentElement.hidden=providerInfo.hidden=modes[target.value]==='script';lengthHint.hidden=modes[target.value]==='plan';};target.onchange=brief.oninput=invalidate;desiredGender.onchange=()=>{invalidate();refreshProposedPreset();};refreshProposedPreset();invalidate();
    consultCredentialChanged=event=>{providerInfo.textContent=event.detail?.configured?'AI音声候補：Irodori / Qwen / Gemini 3.8 Flash / Flash-Lite（API登録済み）':'AI音声候補：Irodori / Qwen（GeminiはAPI登録後に候補へ追加）';invalidate();local.textContent='API登録状態が変わりました。「AIに提案してもらう」で頭から選び直してください。';};api.addEventListener?.('local_narration.gemini_credential_changed',consultCredentialChanged);
   purpose.onchange=()=>{if(purpose.value!=='自由入力')brief.value=purposePresets[purpose.value];invalidate();};
   d.addEventListener('cancel',e=>{e.preventDefault();close();});
   propose.onclick=async()=>{
    if(busy)return;if(!brief.value.trim()){local.textContent='作りたい内容を入力してください。';return;}
-    const kind=modes[target.value];busy=true;propose.disabled=target.disabled=brief.disabled=purpose.disabled=apply.disabled=true;draft.hidden=true;const requestCredentialRevision=geminiCredentialRevision,requestGeminiConfigured=await refreshProviderInfo();
-   const start=Date.now(),update=()=>local.textContent='AIに相談中 / 経過 '+Math.floor((Date.now()-start)/1000)+'秒';update();timer=setInterval(update,1000);notify('running','AIに相談中 / Consulting AI',d);
+    const kind=modes[target.value];busy=true;consultationInFlight=reopen;propose.disabled=target.disabled=brief.disabled=purpose.disabled=apply.disabled=true;draft.hidden=true;const requestCredentialRevision=geminiCredentialRevision,requestGeminiConfigured=await refreshProviderInfo();
+   const start=Date.now(),update=()=>local.textContent='AIに相談中 / 経過 '+Math.floor((Date.now()-start)/1000)+'秒';update();timer=setInterval(update,1000);d.close();notify('running','AIに相談中 / Consulting AI',d);
    try{
     const genderBrief=kind==='script'?brief.value:brief.value+'\n【声の性別】'+desiredGender.value;
     const response=await api.fetchApi('/local-narration/consult',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,text:original,brief:genderBrief,seed:value('seed')})});
@@ -292,7 +294,7 @@ export function installDirectionEditor(node){
     local.textContent=(kind==='plan'?'':scriptBlocks(script.value).length+'件の台詞を提案しました。 ')+(data.reason||'内容を確認・修正してから採用してください。');
     notify('complete','✅ AIの提案ができました。小窓で確認・修正してください / Proposal ready',d);
    }catch(e){if(alive){local.textContent='エラー：'+e.message;notify('error','⚠️ AI相談に失敗しました / Consultation failed\n'+e.message,d);}}
-   finally{clearInterval(timer);busy=false;if(alive)propose.disabled=target.disabled=brief.disabled=purpose.disabled=false;}
+   finally{clearInterval(timer);busy=false;if(consultationInFlight===reopen)consultationInFlight=null;if(alive){propose.disabled=target.disabled=brief.disabled=purpose.disabled=false;if(!d.open)d.showModal();}}
   };
   apply.onclick=async()=>{
    if(snapshot()!==initial){local.textContent='相談中に元の入力が変わりました。開き直してください。';return;}

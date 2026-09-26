@@ -19,12 +19,14 @@ with tempfile.TemporaryDirectory() as temp:
   answers.append(answers[-1]);result=m.propose('古い一文。','テラフォーマーについて考える。',42,lambda _:None,'script')
   assert len(result['text'].splitlines())==5 and len(bodies)==3
   assert bodies[0]['response_format']['json_schema']['schema']['properties']['sentences']['minItems']==5
+  assert bodies[0]['max_tokens']==1280
   assert '検証に失敗' in bodies[1]['messages'][-1]['content']
   assert calls[-1][0]=='unload'
   answers[:]=[['明示した一文です。']]
   answers.append(answers[-1]);result=m.propose('古い一文。','紹介を1文で作って',42,lambda _:None,'script')
   assert len(result['text'].splitlines())==1
   assert bodies[-1]['response_format']['json_schema']['schema']['properties']['sentences']['minItems']==1
+  assert bodies[-1]['max_tokens']==1024
   answers[:]=[['一文目を直します。','二文目を直します。']]
   answers.append(answers[-1]);result=m.propose('元の一文目です。元の二文目です。','原稿を丁寧な口調に言い換えて',42,lambda _:None,'script')
   assert len(result['text'].splitlines())==2

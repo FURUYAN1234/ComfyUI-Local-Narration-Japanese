@@ -1,5 +1,10 @@
 # Changes / 更新履歴
 
+## v1.2.4
+- Bounded the local LLM output budget by requested sentence count, preventing a one-sentence script request from waiting on a 4096-token generation. / 台詞1文の相談が4096トークンの生成待ちにならないよう、文数に合わせてローカルLLMの出力上限を設定しました。
+- AI consultation closes its dialog after submission, keeps the elapsed progress visible, and reopens the proposal or error when finished. The existing dialog can be reopened during the request without sending twice. / AI相談の送信後は窓を閉じ、経過表示を残し、完了・エラー時に提案窓を再表示します。処理中に開き直しても二重送信しません。
+- With an adopted voice, AI consultation defaults to script-only and hides duplicate gender/voice choices; the example selector clearly fills the request field. Choosing script and voice together remains available. / 声を採用済みならAI相談は台詞だけを初期選択とし、重複する性別・音声候補欄を隠し、用途例が依頼文へ入る関係も明示します。台詞と声の両方の提案も選べます。
+
 ## v1.2.3
 - Centered the sentence-edit button label vertically in the first node. / 最初のノードの台詞編集ボタンの文字を縦中央に揃えました。
 

@@ -12,7 +12,7 @@ function running(text){if(!active)started=Date.now();active=true;phase=text;stop
 function finish(text,state='complete'){stop();active=false;show(text,state);}
 api.addEventListener('local_narration.consult_status',({detail:d})=>{
  if(d.state==='detach'){if(panel)document.body.append(panel);return;}
- if(d.state==='running'){consulting=true;active=false;running(d.text);d.dialog.append(panel);return;}
+ if(d.state==='running'){consulting=true;active=false;running(d.text);document.body.append(panel);return;}
  consulting=false;finish(d.text,d.state==='error'?'error':'complete');
  if(d.state==='cancel')document.body.append(panel);
 });

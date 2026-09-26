@@ -74,14 +74,14 @@ The generation node has **Sentence silence / 全体音声の台詞間の無音�
 
 ### Consultation draft and adoption / 相談の下書きと採用
 
-Choose whether AI updates both script and voice, only the script, or only the voice; the other item stays unchanged. / AIが更新する対象を「台詞と声」「台詞だけ」「声だけ」から選び、対象外の設定は維持します。
+Choose whether AI updates both script and voice, only the script, or only the voice; the other item stays unchanged. Once a voice has been adopted, script-only is the default, so Voice settings need not be repeated. / AIが更新する対象を「台詞と声」「台詞だけ」「声だけ」から選び、対象外の設定は維持します。声を採用済みなら台詞だけが初期選択となり、声設定を繰り返す必要はありません。
 Without a sentence count, a new script defaults to five sentences with an introduction, concrete explanation and conclusion; explicit counts take priority. A deficient draft gets one automatic correction attempt. / 文数指定がなければ、新規原稿は導入・具体的な説明・まとめを含む5文を基本にし、明示した文数を優先します。文数などが不適合なら一度だけ自動で修正を求めます。
 A final editorial pass expands weak drafts and removes unsupported assumptions about named works, settings and recent events. This uses the local model, not external source verification. / 下書きの後に校閲を行い、内容不足や、未指定の作品・設定・最近の動向の推測を見直します。ローカルモデルによる校閲であり、外部資料の照合ではありません。
 For example, ask for five lines of narration. The proposal shows editable lines and voice settings; Apply transfers them to the node's sentence list and voice settings together. / 例えば「ナレーションを5行作って」と相談すると、編集できる台詞と声の提案を表示します。採用すると台詞一覧と声の設定へまとめて反映します。
-Purpose examples are available inside the consultation dialog; there is no separate permanent purpose field on the node. / 用途の例は相談の小窓で選べます。ノード上に独立した用途入力欄は置きません。
+Choosing an example fills the editable request field; only that request is sent to AI. There is no separate permanent purpose field on the node. / 依頼文の例を選ぶと編集可能な依頼欄へ入力され、AIにはその依頼文だけが送られます。ノード上に別の用途欄は置きません。
 The proposal is a draft until adopted. Cancelling leaves existing inputs intact. / 提案は採用するまで下書きです。キャンセルしても元の入力は変わりません。
-Closing a pending consultation discards its result; computation finishes in the background. / 相談中に閉じると結果を採用しません。計算は終了まで続きます。
-Consultation status, elapsed time, completion and errors appear at the top even while the dialog is open. / 小窓を開いている間も、画面上部に相談状況・経過時間・完了・エラーを表示します。
+After submission, the dialog closes and the progress banner remains visible. The same dialog can be reopened from the node while waiting; when the proposal or error arrives, it reopens for review. Cancelling a pending consultation discards its result; computation may still finish in the background. / 送信後は窓を閉じ、画面上部に経過表示を残します。待機中はノードから同じ窓を開き直せます。提案完了・エラー時は窓が戻ります。待機中にキャンセルすると結果を採用せず、計算自体は終了まで続く場合があります。
+Consultation status and elapsed time remain visible while the dialog is closed. / 小窓を閉じている間も相談状況と経過時間を表示します。
 
 ### Script and voice editing / 台詞と声の編集
 
@@ -158,12 +158,15 @@ Real GPU runs covered Irodori, Qwen preset/reference, long-text voice reuse and 
 Gemini request construction, Flash/Flash-Lite routing, API-key redaction, credential-dialog closure, 30-voice selection and emotion settings have automated coverage. Live API generation completed for both Gemini models through the normal ComfyUI path, and both results appeared in the final playback/save node. / Geminiの要求形式、Flash/Flash-Lite分岐、APIキー秘匿、認証窓の自動終了、30音声選択、感情設定は自動検査しています。Geminiの2モデルは通常のComfyUI経路で実API生成し、どちらも最終の再生・保存ノードへ表示されることを確認しています。
 Pronunciation still requires listening; ASR matching alone does not prove naturalness. / 発音は試聴が必要です。ASR一致だけで自然さを保証しません。
 The initial environment setup was checked with existing compatible environments; a different PC may require CUDA or system-package adjustments. / 初期設定は既存の互換環境を指定して検証しており、別PCではCUDAやシステムパッケージの調整が必要な場合があります。
+For v1.2.4, live ComfyUI consultations returned both a voice-only proposal and a one-sentence script proposal after the dialog closed and reopened; no test proposal was adopted. / v1.2.4では、ComfyUI実画面で声のみと台詞1文のAI提案が戻り、送信後に閉じた窓の再表示を確認しました。検証用の提案は採用していません。
 For v1.2.3, the sentence-edit button text is vertically centered in the compact first-node layout. / v1.2.3では、最初のノードの「台詞を1文ずつ編集」ボタンの文字を縦中央に揃えました。
 For v1.2.2, the reading review also includes a private per-word user dictionary. Add, edit or delete a word and its hiragana reading; matching words take priority over sentence memory in new conversions. During an open review, updated suggestions replace only rows the user has not manually edited. / v1.2.2では読み確認に非公開の単語辞書を追加しました。単語とひらがなの読みを登録・編集・削除できます。辞書にある語は新しい読み変換で文単位の記憶より優先し、確認中は手修正していない行だけ候補を更新します。
 For v1.2.2, changing Female/Male in Voice settings updates an opposite-gender term in the custom tone while keeping the rest of the text. The Apply button also aligns a pre-existing unambiguous mismatch, saves the selected settings and closes the dialog. A mixed male/female instruction is still held for manual correction. This behavior was checked in the live ComfyUI editor and regression tests. / v1.2.2では、声の性別を切り替えると自由入力の逆の性別語だけが更新され、他の口調は保持されます。既に食い違った設定も、明確に一方の性別だけなら「採用」で整合して保存・閉じます。男女が混在する指示は手動修正を求めます。ComfyUI実画面と回帰テストで確認しました。
 For v1.2.1, manual Female/Male/Any/Auto menus and both gender-specific Qwen preset voices were checked in the live ComfyUI workflow. Male and female AI proposals and an automatic ComfyUI consultation completed; opposite-gender instructions were rejected. The two short Qwen test MP3 files were generated and saved, but their audible quality was not assessed. / v1.2.1では、手動の女性・男性・任意・自動メニューを実際のComfyUI画面で確認し、Qwenの男女話者で短いMP3を生成・保存しました。男女指定のAI提案とComfyUI経由の自動相談も完了し、矛盾する性別指定は拒否されました。音声の聴感品質は未評価です。
 
 ## Version / バージョン
+
+v1.2.4: closed the consultation dialog after sending, reopened it for results, and kept the adopted voice by default in later script consultations. / v1.2.4ではAI相談の送信後に窓を閉じ、結果で再表示し、採用済みの声があるときは台詞のみの相談を初期選択にしました。
 
 v1.2.3: centered the sentence-edit button label in the first node. / v1.2.3では最初のノードの台詞編集ボタンの文字位置を修正しました。
 

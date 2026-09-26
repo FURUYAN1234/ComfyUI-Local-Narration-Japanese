@@ -1,4 +1,4 @@
-# v1.2.3 — Voice settings and reading dictionary / 声設定と読み辞書
+# v1.2.4 — Consultation flow, voice settings and reading dictionary / AI相談・声設定・読み辞書
 
 In Voice settings, choosing Female or Male now updates an opposite-gender term in a custom tone description while preserving the other wording. Apply also corrects a clear mismatch already present in the dialog, saves the selected voice settings and closes it. An instruction mentioning both male and female still requires manual correction. / 声設定で「女性」「男性」を選ぶと、自由入力に残った逆の性別語だけを更新し、ほかの口調を保持します。既に食い違っている場合も、明確に一方の性別だけなら「採用」で整合して保存し、ダイアログを閉じます。男女が混在する指示は手動で修正してください。
 
@@ -7,3 +7,7 @@ The reading review now includes a private user dictionary for word-to-hiragana c
 The live ComfyUI dialog and the saved workflow were checked with a female Gemini studio voice and a custom tone; regression tests cover the former mismatch, gender switching and ambiguous instructions. Audio quality was not reassessed for this UI fix. / Geminiの女性公式ボイスと自由入力の口調で、ComfyUIの実画面とワークフロー保存を確認しました。旧来の食い違い、性別切替、曖昧な指示を回帰テストで確認しています。この画面修正で音声の聴感品質は再評価していません。
 
 The sentence-edit button in the first node now has vertically centered text, removing the excess-looking space above its label. / 最初のノードの「台詞を1文ずつ編集」ボタンは文字を縦中央に配置し、上側の空きが目立たないようにしました。
+
+After sending an AI consultation, the dialog closes and progress remains visible. The proposal or error reopens the dialog. With an adopted voice, consultation defaults to proposing only the script and hides voice options; users can still request a new voice. The example selector fills the request field. / AI相談を送信すると窓を閉じ、経過表示を残します。提案またはエラー時に窓が戻ります。声を採用済みなら相談は台詞だけを初期選択とし、声の候補を隠します。依頼文の例は下欄へ入力され、必要なら声も再提案できます。
+
+The local LLM output cap for script proposals now follows the requested number of sentences, so a one-sentence request does not carry the previous 4096-token cap. / 台詞提案のローカルLLM出力上限を文数に合わせ、1文の依頼で従来の4096トークン上限を使わないようにしました。

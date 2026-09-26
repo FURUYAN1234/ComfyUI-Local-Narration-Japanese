@@ -3,7 +3,7 @@ class E{
  constructor(tag){this.tag=tag;this.style={};this.dataset={};this.children=[];this.value='';this.hidden=false;}
  append(e){this.children.push(e);e.parentElement=this;}addEventListener(k,f){this[k]=f;}setAttribute(k,v){this[k]=v;}
  replaceChildren(...es){this.children=[];es.forEach(e=>this.append(e));}querySelectorAll(t){return this.children.flatMap(e=>[...(e.tag===t?[e]:[]),...e.querySelectorAll(t)]);}querySelector(t){return this.children.find(e=>e.tag===t);}
- get lastElementChild(){return this.children.at(-1);}showModal(){}close(){}remove(){this.removed=true;}focus(){}scrollIntoView(){}
+ get lastElementChild(){return this.children.at(-1);}showModal(){this.open=true;}close(){this.open=false;}remove(){this.removed=true;}focus(){}scrollIntoView(){}
 }
 const body=new E('body'),events=[],requests=[];let resolveFetch,ext,geminiConfigured=false;const queued=[];
 const ctx={document:{body,createElement:t=>new E(t),querySelector:()=>null},app:{queuePrompt:async(...args)=>queued.push(args),graph:{setDirtyCanvas(){},links:{}},registerExtension:e=>ext=e},api:{dispatchEvent:e=>events.push(e.detail),fetchApi:(url,o={})=>{if(url.includes('gemini-credential-status'))return Promise.resolve({ok:true,json:async()=>({configured:geminiConfigured})});requests.push(JSON.parse(o.body));return new Promise(r=>resolveFetch=r);}},CustomEvent:class{constructor(type,o){this.detail=o.detail;}},crypto:require('crypto').webcrypto,Map,Date,queueMicrotask:f=>f(),setInterval:()=>1,clearInterval(){}};
@@ -19,11 +19,15 @@ assert(all(node.panel).some(e=>e.textContent.includes('声は未確定')));
 (async()=>{
  find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();let d=body.children.at(-1);
  assert.deepEqual(find(d,'Suggest / AIに提案してもらう').parentElement.children.map(e=>e.textContent),['Cancel / キャンセル（変更を破棄）','Apply / 提案を台詞・声へ採用','Suggest / AIに提案してもらう']);
- field(d,'Request / 作りたい内容・希望').value='紹介台詞を5行作って';
+ field(d,'Request / AIへの依頼文（この内容を送信）').value='紹介台詞を5行作って';
  const running=find(d,'Suggest / AIに提案してもらう').onclick();
  await tick();
  assert.equal(requests.at(-1).kind,'compose');assert.equal(get('text').value,'元の台詞。');
+ assert.equal(d.open,false,'consultation closes while the request runs');
+ find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();assert.equal(d.open,true,'consultation can be reopened while running');
+ d.close();
  resolveFetch({ok:true,json:async()=>({text:'一行目です。\n二行目です。\n三行目です。\n四行目です。\n五行目です。',engine:'Irodori',style:'穏やかな声',speed:1,reason:'紹介向け'})});await running;
+ assert.equal(d.open,true,'proposal reopens for review when ready');
  assert.equal(get('text').value,'元の台詞。','proposal must remain a draft');
  field(d,'Proposed script / 台詞の提案（1行に1文・編集可）').value='編集した一行目です。\n二行目です。\n三行目です。\n四行目です。\n五行目です。';
  find(d,'Apply script and voice / 台詞一覧と声へ採用').onclick();
@@ -37,6 +41,9 @@ assert(all(node.panel).some(e=>e.textContent.includes('声は未確定')));
  tone.value='明るい';tone.onchange();assert(field(d,'Custom voice and tone / 声質・口調の自由入力').parentElement.hidden);
  find(d,'Cancel / キャンセル（変更を破棄）').onclick();assert.equal(get('style').value,'穏やかな声');
  find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();d=body.children.at(-1);
+ assert.equal(field(d,'Create / AIに作ってもらうもの').value,'台詞を作る・直す（声は変更しない）','adopted voice defaults to script-only consultation');
+ assert.equal(field(d,'Voice gender / 声の性別').parentElement.hidden,true,'gender is hidden when voice is preserved');
+ await tick();assert(all(d).some(e=>e.textContent?.startsWith('AI音声候補')&&e.hidden),'voice candidates are hidden in script-only mode');
  field(d,'Create / AIに作ってもらうもの').value='台詞を作る・直す（声は変更しない）';
  let req=find(d,'Suggest / AIに提案してもらう').onclick();await tick();assert.equal(requests.at(-1).kind,'script');
  resolveFetch({ok:true,json:async()=>({text:'台詞だけ変更しました。'})});await req;
@@ -46,8 +53,10 @@ assert(all(node.panel).some(e=>e.textContent.includes('声は未確定')));
  req=find(d,'Suggest / AIに提案してもらう').onclick();await tick();assert.equal(requests.at(-1).kind,'plan');
  resolveFetch({ok:true,json:async()=>({engine:'Qwen',style:'穏やかな声',speed:1.1,reason:'声のみ変更'})});await req;
  find(d,'Apply voice / 声の設定へ採用').onclick();assert.equal(get('engine').value,'Qwen');assert.equal(get('text').value,'台詞だけ変更しました。');
- find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();d=body.children.at(-1);const pending=find(d,'Suggest / AIに提案してもらう').onclick();await tick();find(d,'Cancel / キャンセル（変更を破棄）').onclick();resolveFetch({ok:true,json:async()=>({text:'遅い結果',engine:'Qwen',style:'別の声',speed:1})});await pending;
- assert.equal(get('style').value,'穏やかな声');assert(events.some(e=>e.state==='running'));assert(events.some(e=>e.state==='complete'));assert(events.some(e=>e.state==='cancel'));
+ find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();d=body.children.at(-1);const pending=find(d,'Suggest / AIに提案してもらう').onclick();await tick();assert.equal(d.open,false);find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();assert.equal(d.open,true);find(d,'Cancel / キャンセル（変更を破棄）').onclick();resolveFetch({ok:true,json:async()=>({text:'遅い結果',engine:'Qwen',style:'別の声',speed:1})});await pending;
+ assert.equal(get('style').value,'穏やかな声');
+ find(node.panel,'Consult AI / 作りたい内容をAIに相談').onclick();d=body.children.at(-1);const failed=find(d,'Suggest / AIに提案してもらう').onclick();await tick();assert.equal(d.open,false);resolveFetch({ok:false,json:async()=>({error:'テスト用エラー'})});await failed;assert.equal(d.open,true,'errors reopen the same dialog');assert(all(d).some(e=>e.textContent?.includes('テスト用エラー')));find(d,'Cancel / キャンセル（変更を破棄）').onclick();
+ assert(events.some(e=>e.state==='running'));assert(events.some(e=>e.state==='complete'));assert(events.some(e=>e.state==='cancel'));
  geminiConfigured=true;get('engine').value='Gemini 3.8 Flash TTS';get('voice_mode').value='用意された声（Gemini）';get('gemini_voice').value='Laomedeia｜快活でテンポのよい声';get('style').value='落ち着いた深みのある男声で、温かい口調。';node.properties.narrationVoiceGender='女性';
  find(node.panel,'Voice settings / 声を確認・調整').onclick();d=body.children.at(-1);
  assert.equal(field(d,'Voice gender / 声の性別（自動・女性・男性・任意）').value,'女性');

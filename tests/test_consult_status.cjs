@@ -7,7 +7,7 @@ run('status.js');handlers['local_narration.status']({detail:{node:1,state:'runni
 
 const modal=new E('dialog');
 handlers['local_narration.consult_status']({detail:{state:'running',text:'AIに相談中',dialog:modal}});
-assert.equal(panel.parentElement,modal);assert(panel.textContent.includes('AIに相談中'));assert(panel.textContent.includes('経過'));
+assert.equal(panel.parentElement,body,'progress remains visible after consultation modal closes');assert(panel.textContent.includes('AIに相談中'));assert(panel.textContent.includes('経過'));
 handlers.execution_success();assert.equal(panel.dataset.state,'running','Unrelated queue completion must not finish consultation');
 handlers['local_narration.consult_status']({detail:{state:'complete',text:'提案完了',dialog:modal}});
 assert.equal(panel.dataset.state,'complete');
@@ -16,4 +16,4 @@ handlers['local_narration.consult_status']({detail:{state:'running',text:'相談
 handlers['local_narration.consult_status']({detail:{state:'error',text:'失敗',dialog:modal}});assert.equal(panel.dataset.state,'error');
 handlers['local_narration.consult_status']({detail:{state:'running',text:'相談中',dialog:modal}});
 handlers['local_narration.consult_status']({detail:{state:'cancel',text:'相談を閉じました',dialog:modal}});assert.equal(panel.parentElement,body);
-console.log('PASS consultation top-layer status, elapsed time, completion/error/dismissal, unrelated execution isolation');
+console.log('PASS consultation background status, elapsed time, completion/error/dismissal, unrelated execution isolation');
