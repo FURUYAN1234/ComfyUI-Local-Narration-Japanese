@@ -1,6 +1,6 @@
 # Local Japanese Narration / 日本語おまかせナレーション
 
-One ComfyUI workflow for Irodori, Qwen3-TTS, Gemini 3.8 Flash TTS and Flash-Lite TTS, with AI/manual control and pronunciation review. / Irodori・Qwen3-TTS・Gemini 3.8 Flash TTS・Flash-Lite TTSを1本で切り替え、AIおまかせ・手動設定・生成前の読み確認を使えるComfyUIワークフローです。
+One ComfyUI workflow for Irodori, Qwen3-TTS, Gemini 3.8 Flash TTS, Flash-Lite TTS and ElevenLabs, with AI/manual control and pronunciation review. / Irodori・Qwen3-TTS・Gemini 3.8 Flash TTS・Flash-Lite TTSを1本で切り替え、AIおまかせ・手動設定・生成前の読み確認を使えるComfyUIワークフローです。
 
 The workflow uses a compact left-to-right layout: consultation and adopted inputs, generation, then the scrolling audio result list. / ワークフローは、相談・採用済み入力、生成、スクロール式の音声結果一覧を左から右へ並べます。
 
@@ -32,6 +32,7 @@ Download the LLM inside LM Studio before using AI mode. / AI利用前にLM Studi
 `LOCAL_NARRATION_LMS_CLI` can point to the CLI, and `LOCAL_NARRATION_LM_ENDPOINT` can override the API URL. / CLIの場所とAPI接続先は左記の環境変数で指定できます。
 Windows LM Studio is detected from its standard installation on WSL. / WSLではWindows版LM Studioの標準配置を検出します。
 Gemini generation requires a Gemini API key and uses a cloud API for which charges may apply, but key registration is optional when using local Irodori or Qwen. The optional API button is the first control in the narration node. Saving a verified key closes the dialog automatically; the key is kept only in the running ComfyUI process memory and is never written to the workflow, output JSON or log. / Gemini生成にはGemini APIキーが必要で、クラウドAPIの利用料金が発生する場合がありますが、ローカルのIrodori・Qwenだけを使う場合、API登録は不要です。任意のAPI登録ボタンは音声企画ノードの最初に表示されます。認証して保存すると入力窓は自動で閉じ、キーは動作中のComfyUIプロセスのメモリだけに保持され、ワークフロー・出力JSON・ログへ保存されません。
+ElevenLabs is also available in manual Voice settings. Set its separate API key, select a named voice from your available voices, and listen to its preview. The provider's preview may be in English; check Japanese pronunciation with generated narration. If the voice list cannot be retrieved, enter a Voice ID manually. The workflow uses Eleven Multilingual v2 for Japanese, sends approved text only after the reading review, and saves the resulting audio through the same output path. The key stays in ComfyUI process memory; generation uses your ElevenLabs credits. / ElevenLabsも手動の「声を確認・調整」で選べます。専用APIキーを設定し、利用可能な声を名前の一覧から選んで試聴します。提供元の試聴は英語の場合があり、日本語の発音は生成音声で確認します。一覧を取得できない場合はVoice IDを手入力できます。日本語対応のEleven Multilingual v2を使い、読み確認で承認した原稿を送信して、既存と同じ出力先へ保存します。キーはComfyUIプロセスのメモリ内だけに保持され、生成時にElevenLabsのクレジットを使用します。
 
 When Gemini TTS is selected, the narration text, voice/style instructions and generation settings are sent to the Gemini API. Do not submit sensitive, confidential or personal information through unpaid Gemini services; Google states that unpaid-service inputs and outputs may be used for product improvement and reviewed by humans, while paid-service data handling differs. Review the current Gemini API terms before use. / Gemini TTSを選ぶと、原稿・声や口調の指示・生成設定がGemini APIへ送信されます。Googleは、無償サービスの入出力を製品改善に利用し、人手で確認する場合があるため、機密情報・個人情報を無償サービスへ送信しないよう案内しています。有償サービスではデータの扱いが異なります。利用前に最新のGemini API規約を確認してください。
 
@@ -61,7 +62,7 @@ Enable the separate reference node and upload suitable reference speech to use i
 
 ## Use / 使い方
 
-1. Optional: register a Gemini API key with the first button only when using Gemini TTS. / 任意：Gemini TTSを使う場合だけ、最初のボタンからGemini APIキーを登録します。
+1. Optional: register a Gemini or ElevenLabs API key with the corresponding button only when using that cloud service. / 任意：クラウド音声を使う場合だけ、該当するGeminiまたはElevenLabsのボタンからAPIキーを登録します。
 2. Review or set the current voice in Voice settings, then consult AI when you want a script or voice proposal. / 「声を確認・調整」で現在の声を確認・設定し、台詞や声の提案が必要な場合はAIに相談します。
 3. Review and edit the proposed script and voice in the dialog, then Apply. / 小窓で提案された台詞と声を確認・修正し、採用します。
 4. Confirm the adopted script and voice shown on the node. / ノード上の採用済み台詞と声を確認します。
@@ -165,6 +166,9 @@ For v1.2.2, changing Female/Male in Voice settings updates an opposite-gender te
 For v1.2.1, manual Female/Male/Any/Auto menus and both gender-specific Qwen preset voices were checked in the live ComfyUI workflow. Male and female AI proposals and an automatic ComfyUI consultation completed; opposite-gender instructions were rejected. The two short Qwen test MP3 files were generated and saved, but their audible quality was not assessed. / v1.2.1では、手動の女性・男性・任意・自動メニューを実際のComfyUI画面で確認し、Qwenの男女話者で短いMP3を生成・保存しました。男女指定のAI提案とComfyUI経由の自動相談も完了し、矛盾する性別指定は拒否されました。音声の聴感品質は未評価です。
 
 ## Version / バージョン
+
+v1.2.5: adds optional ElevenLabs narration, voice-list selection and preview, custom Voice ID input, and session-only API key handling. / v1.2.5ではElevenLabsの任意の音声生成、声一覧からの選択と試聴、Voice IDの自由入力、セッション限定のAPIキー管理を追加しました。
+
 
 v1.2.4: closed the consultation dialog after sending, reopened it for results, and kept the adopted voice by default in later script consultations. / v1.2.4ではAI相談の送信後に窓を閉じ、結果で再表示し、採用済みの声があるときは台詞のみの相談を初期選択にしました。
 

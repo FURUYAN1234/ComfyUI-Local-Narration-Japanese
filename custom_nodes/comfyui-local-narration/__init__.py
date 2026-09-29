@@ -13,8 +13,8 @@ LOCAL=Path(__file__).with_name('local_config.json')
 ROOT=Path(json.loads(LOCAL.read_text())['runtime']) if LOCAL.exists() else Path(__file__).with_name('runtime')
 MODES=['AIおまかせ','手動','AI提案＋手動上書き']
 GEMINI_ENGINES={'Gemini 3.8 Flash TTS':'gemini-3.8-flash-tts','Gemini 3.8 Flash-Lite TTS':'gemini-3.8-flash-lite-tts'}
-ENGINES=['おまかせ','Irodori','Qwen',*GEMINI_ENGINES]
-VOICES=['デザイン','用意された声（Qwen）','用意された声（Gemini）','新しい声をデザイン（Gemini）','保存済みVoice ID（Gemini）']
+ENGINES=['おまかせ','Irodori','Qwen',*GEMINI_ENGINES,'ElevenLabs']
+VOICES=['デザイン','用意された声（Qwen）','用意された声（Gemini）','新しい声をデザイン（Gemini）','保存済みVoice ID（Gemini）','ElevenLabsの声']
 CHARACTERS={'自由指定':'','落ち着いた女性ナレーター':'落ち着いた成人女性。聞き取りやすい標準語で丁寧な解説。','明るい女性ナレーター':'明るく親しみやすい成人女性。自然で軽快な案内。','落ち着いた男性ナレーター':'落ち着いた成人男性。低めの声で丁寧な説明。','元気な男性ナレーター':'元気で親しみやすい成人男性。軽快な口調。','やさしい物語の語り手':'柔らかい成人の声。穏やかなテンポで物語を語る。','元気なアニメキャラクター':'表情豊かで元気な若い成人女性のキャラクター声。','クールなアニメキャラクター':'若い成人男性の落ち着いたキャラクター声。控えめでクールな口調。','落ち着いたニュース調':'成人の中性的な声。明瞭で抑揚を抑えたニュース調。'}
 SPEAKERS=['Ono_anna','Aiden','Dylan','Eric','Ryan','Serena','Sohee','Uncle_fu','Vivian']
 GEMINI_VOICES={
@@ -47,6 +47,7 @@ GEMINI_EMOTIONS={'自動（原稿・口調から判断）':'','ニュートラ�
 GEMINI_EMOTION_STRENGTH={'控えめ':'感情表現は控えめに','標準':'感情表現は自然な強さで','強め':'感情をはっきり強めに表現して'}
 _gemini_api_key=''
 _gemini_voice_cache={}
+_elevenlabs_api_key=''
 DEFAULT_PAUSE_MS=800
 def silence_samples(sample_rate,pause_ms=DEFAULT_PAUSE_MS):return max(0,round(sample_rate*max(0,pause_ms)/1000))
 def notify(node,state,text,terminal=False,client_id=...):
@@ -91,6 +92,10 @@ def _gemini_designed_voice(description,key,model):
  if not re.fullmatch(r'voice_[A-Za-z0-9_-]+',voice_id):raise RuntimeError('Geminiの声デザイン結果にVoice IDがありません。')
  _gemini_voice_cache[cache_key]=voice_id
  return voice_id
+
+def _elevenlabs_module():
+ spec=importlib.util.spec_from_file_location('local_narration_elevenlabs',ROOT/'elevenlabs_api.py')
+ module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 def load_planner():
  spec=importlib.util.spec_from_file_location('local_narration_planner',ROOT/'planner.py')
  module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
@@ -169,11 +174,12 @@ class NarrationDirection:
    'gemini_emotion_custom':('STRING',{'default':'','tooltip':'自由入力を選んだ場合の感情・演技指示。'}),
    # Keep new persisted widgets at the end so older positional widget_values remain compatible.
    'gemini_voice_design_preset':(list(GEMINI_VOICE_DESIGNS),{'default':next(iter(GEMINI_VOICE_DESIGNS)),'tooltip':'Gemini Voice Designへ渡す声イメージ。自由入力時だけ詳細欄を使います。'}),
+   'elevenlabs_voice_id':('STRING',{'default':'','tooltip':'ElevenLabsの声一覧から選択、またはVoice IDを入力。APIキーではありません。'}),
   },'hidden':{'unique_id':'UNIQUE_ID'}}
  RETURN_TYPES=('NARRATION_PLAN','STRING')
  RETURN_NAMES=('Voice plan / 音声企画','Chosen settings / 選定内容')
  FUNCTION='plan';CATEGORY='audio/Local Narration'
- def plan(self,text,purpose,mode,engine,voice_mode,speaker,style,speed,seed,reference_text,gemini_voice=None,gemini_voice_design='',gemini_voice_id='',gemini_emotion='自動（原稿・口調から判断）',gemini_emotion_strength='標準',gemini_emotion_custom='',gemini_voice_design_preset=None,reference_audio=None,unique_id=None,character="自由指定",dialogue_blocks=""):
+ def plan(self,text,purpose,mode,engine,voice_mode,speaker,style,speed,seed,reference_text,gemini_voice=None,gemini_voice_design='',gemini_voice_id='',gemini_emotion='自動（原稿・口調から判断）',gemini_emotion_strength='標準',gemini_emotion_custom='',gemini_voice_design_preset=None,elevenlabs_voice_id='',reference_audio=None,unique_id=None,character="自由指定",dialogue_blocks=""):
   blocks=[];target=''
   if dialogue_blocks.strip():
    blocks,target=parse_blocks(dialogue_blocks)
@@ -188,9 +194,9 @@ class NarrationDirection:
   if speed and not .5<=speed<=2:raise ValueError('話速は0（おまかせ）、または0.5〜2.0倍です。')
   try:
    p={'engine':'Irodori' if engine=='おまかせ' else engine,'style':style.strip() or '自然で聞き取りやすい日本語のナレーション。','speed':speed or 1.0,'reason':'画面で採用した声の設定'}
-   chosen='design' if mode=='AIおまかせ' else {'デザイン':'design','用意された声（Qwen）':'preset','用意された声（Gemini）':'gemini_preset','新しい声をデザイン（Gemini）':'gemini_design','保存済みVoice ID（Gemini）':'gemini_saved'}[voice_mode]
+   chosen='design' if mode=='AIおまかせ' else {'デザイン':'design','用意された声（Qwen）':'preset','用意された声（Gemini）':'gemini_preset','新しい声をデザイン（Gemini）':'gemini_design','保存済みVoice ID（Gemini）':'gemini_saved','ElevenLabsの声':'elevenlabs_voice'}[voice_mode]
    reference=None
-   if mode!='AIおまかせ' and reference_audio and reference_audio.get('enabled') and p['engine'] not in GEMINI_ENGINES:
+   if mode!='AIおまかせ' and reference_audio and reference_audio.get('enabled') and p['engine'] not in GEMINI_ENGINES and p['engine']!='ElevenLabs':
     chosen='reference'
     name=reference_audio.get('audio','').strip()
     if not name:raise ValueError('参照音声をONにする場合は、参照ノードで音声を選択してください。')
@@ -216,8 +222,13 @@ class NarrationDirection:
     emotion=gemini_emotion_custom.strip() if gemini_emotion=='自由入力' else GEMINI_EMOTIONS[gemini_emotion]
     if gemini_emotion=='自由入力' and not emotion:raise ValueError('Geminiの感情・演技指示を入力してください。')
     gemini_style=p['style'] if not emotion else p['style']+' '+emotion+'。'+GEMINI_EMOTION_STRENGTH[gemini_emotion_strength]+'。'
+   if p['engine']=='ElevenLabs':
+    if reference_audio and reference_audio.get('enabled'):raise ValueError('ElevenLabsでは参照音声ノードを使いません。OFFにしてください。')
+    if chosen!='elevenlabs_voice':raise ValueError('ElevenLabsの声を選び直してください。')
+    if not _elevenlabs_module().VOICE_ID.fullmatch(elevenlabs_voice_id.strip()):raise ValueError('ElevenLabsの声を一覧から選ぶかVoice IDを入力してください。')
    p.update(text=text,voice_mode=chosen,speaker=speaker,reference_text=reference_text,selection_mode=mode,character="AI選定："+p["style"] if mode=="AIおまかせ" else character)
    if p['engine'] in GEMINI_ENGINES:p.update(gemini_model=GEMINI_ENGINES[p['engine']],gemini_voice=gemini_voice,gemini_voice_design_preset=gemini_voice_design_preset,gemini_voice_design=gemini_voice_design.strip(),gemini_voice_id=gemini_voice_id.strip(),gemini_emotion=gemini_emotion,gemini_emotion_strength=gemini_emotion_strength,gemini_emotion_custom=gemini_emotion_custom.strip(),gemini_style=gemini_style)
+   if p['engine']=='ElevenLabs':p['elevenlabs_voice_id']=elevenlabs_voice_id.strip()
    if blocks:p.update(dialogue_blocks=blocks,block_target=target,direction_id=str(unique_id))
    shown=json.dumps(p,ensure_ascii=False,indent=2)
    if chosen=='reference':p['_reference_audio']=reference
@@ -277,12 +288,15 @@ class NarrationGenerate:
   if review_readings:
    notify(unique_id,'running','台詞と読みの確認待ち / Review readings')
    p=review(p,unique_id)
-  if p['engine'] not in ['Irodori','Qwen',*GEMINI_ENGINES]:raise ValueError('音声モデルが不正です。')
-  gemini_key=None
+  if p['engine'] not in ['Irodori','Qwen',*GEMINI_ENGINES,'ElevenLabs']:raise ValueError('音声モデルが不正です。')
+  gemini_key=None;elevenlabs_key=None
   if p['engine'] in GEMINI_ENGINES:
    gemini_key=_gemini_key()
    if p['voice_mode']=='gemini_preset':p['gemini_voice_id']=GEMINI_VOICES[p['gemini_voice']]
    elif p['voice_mode']=='gemini_design':p['gemini_voice_id']=_gemini_designed_voice(p['gemini_voice_design'],gemini_key,p['gemini_model'])
+  if p['engine']=='ElevenLabs':
+   elevenlabs_key=_elevenlabs_api_key
+   if not elevenlabs_key:raise RuntimeError('ElevenLabs APIキーがこのComfyUIセッションに登録されていません。')
   stamp=datetime.now().strftime('%Y%m%d%H%M%S')+'_'+uuid.uuid4().hex[:6]
   out=Path(folder_paths.get_output_directory())/'audio/LocalNarration'/stamp
   out.mkdir(parents=True,exist_ok=False)
@@ -293,12 +307,13 @@ class NarrationGenerate:
   (out/'request.json').write_text(json.dumps(request,ensure_ascii=False,indent=2))
   config=json.loads((ROOT/'config.json').read_text());python=config['python'].get(p['engine'],sys.executable)
   mm.unload_all_models();mm.soft_empty_cache()
-  notify(unique_id,'running',p['engine']+(' 音声生成中 / Cloud API' if gemini_key else ' 音声生成中 / GPU'))
+  notify(unique_id,'running',p['engine']+(' 音声生成中 / Cloud API' if gemini_key or elevenlabs_key else ' 音声生成中 / GPU'))
   proc=None
   try:
    with (out/'generation.log').open('w') as log:
     child_env=os.environ.copy()
     if gemini_key:child_env['LOCAL_NARRATION_GEMINI_API_KEY']=gemini_key
+    if elevenlabs_key:child_env['LOCAL_NARRATION_ELEVENLABS_API_KEY']=elevenlabs_key
     proc=subprocess.Popen([python,'-u',str(ROOT/'worker.py'),str(out/'request.json')],stdout=log,stderr=subprocess.STDOUT,env=child_env)
     started=time.monotonic()
     while proc.poll() is None:
@@ -423,6 +438,35 @@ async def remove_gemini_credential(request):
  if request.headers.get('Origin') and request.headers['Origin'].split('://',1)[-1]!=request.host:return web.json_response({'error':'Cross-origin request rejected'},status=403)
  _gemini_api_key='';_gemini_voice_cache.clear()
  return web.json_response({'ok':True,'configured':False,'storage':'process_memory'})
+
+@PromptServer.instance.routes.get('/local-narration/elevenlabs-credential-status')
+async def elevenlabs_credential_status(request):
+ return web.json_response({'configured':bool(_elevenlabs_api_key),'storage':'process_memory'},headers={'Cache-Control':'no-store'})
+
+@PromptServer.instance.routes.post('/local-narration/elevenlabs-credential')
+async def save_elevenlabs_credential(request):
+ global _elevenlabs_api_key
+ if request.headers.get('Origin') and request.headers['Origin'].split('://',1)[-1]!=request.host:return web.json_response({'error':'Cross-origin request rejected'},status=403)
+ try:
+  body=await request.json();key=str(body.get('api_key','')).strip() if isinstance(body,dict) else ''
+  _elevenlabs_module().validate_key(key)
+ except (RuntimeError,ValueError,TypeError) as e:return web.json_response({'error':str(e)},status=401)
+ _elevenlabs_api_key=key
+ return web.json_response({'ok':True,'configured':True,'verified':False,'storage':'process_memory'})
+
+@PromptServer.instance.routes.delete('/local-narration/elevenlabs-credential')
+async def remove_elevenlabs_credential(request):
+ global _elevenlabs_api_key
+ if request.headers.get('Origin') and request.headers['Origin'].split('://',1)[-1]!=request.host:return web.json_response({'error':'Cross-origin request rejected'},status=403)
+ _elevenlabs_api_key=''
+ return web.json_response({'ok':True,'configured':False,'storage':'process_memory'})
+
+@PromptServer.instance.routes.get('/local-narration/elevenlabs-voices')
+async def elevenlabs_voices(request):
+ if not _elevenlabs_api_key:return web.json_response({'error':'先にElevenLabs APIキーを登録してください。'},status=401)
+ try:voices=await asyncio.to_thread(_elevenlabs_module().list_voices,_elevenlabs_api_key)
+ except (RuntimeError,ValueError) as e:return web.json_response({'error':str(e)},status=502)
+ return web.json_response({'voices':voices},headers={'Cache-Control':'no-store'})
 
 @PromptServer.instance.routes.post('/local-narration/consult')
 async def consult(request):

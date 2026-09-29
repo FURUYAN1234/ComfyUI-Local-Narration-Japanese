@@ -6,6 +6,7 @@ import soundfile as sf
 import torch
 from audio_join import DEFAULT_PAUSE_MS,join_numpy_audio
 from gemini_api import request_audio
+from elevenlabs_api import request_audio as request_elevenlabs_audio
 r=Path(__file__).resolve().parent
 config=json.loads((r/'config.json').read_text())
 req=json.loads(Path(sys.argv[1]).read_text())
@@ -49,6 +50,16 @@ elif p['engine']=='Qwen':
   all_audio.append(a);reports.append({'text':part,'seconds':len(a)/sr})
   if mode=='design' and len(parts)>1:
    reference=str(chunk);reference_text=part;mode='reference';del model;gc.collect();torch.cuda.empty_cache();model=load('Base')
+elif p['engine']=='ElevenLabs':
+ key=os.environ.pop('LOCAL_NARRATION_ELEVENLABS_API_KEY','')
+ if not key:raise RuntimeError('ElevenLabs APIキーが生成プロセスへ渡されていません。')
+ voice_id=p.get('elevenlabs_voice_id','')
+ for i,part in enumerate(parts):
+  mp3=out/f'part-{i:03}.mp3';mp3.write_bytes(request_elevenlabs_audio(voice_id,part,key))
+  chunk=out/f'part-{i:03}.wav'
+  subprocess.run(['ffmpeg','-v','error','-nostdin','-y','-i',str(mp3),'-ar','44100','-ac','1',str(chunk)],check=True,timeout=120)
+  a,sr=sf.read(chunk,dtype='float32',always_2d=True);a=a.mean(axis=1)
+  all_audio.append(a);reports.append({'text':part,'seconds':len(a)/sr})
 else:
  key=os.environ.pop('LOCAL_NARRATION_GEMINI_API_KEY','')
  if not key:raise RuntimeError('Gemini APIキーが生成プロセスへ渡されていません。')

@@ -1,13 +1,7 @@
-# v1.2.4 — Consultation flow, voice settings and reading dictionary / AI相談・声設定・読み辞書
+# v1.2.5 — Optional cloud narration / 任意のクラウド音声生成
 
-In Voice settings, choosing Female or Male now updates an opposite-gender term in a custom tone description while preserving the other wording. Apply also corrects a clear mismatch already present in the dialog, saves the selected voice settings and closes it. An instruction mentioning both male and female still requires manual correction. / 声設定で「女性」「男性」を選ぶと、自由入力に残った逆の性別語だけを更新し、ほかの口調を保持します。既に食い違っている場合も、明確に一方の性別だけなら「採用」で整合して保存し、ダイアログを閉じます。男女が混在する指示は手動で修正してください。
+Adds an optional external TTS provider to the narration workflow. Select an available voice by name, listen to its provider sample, or enter a Voice ID. The sample may be in a different language; verify Japanese pronunciation with generated audio. / ナレーション用ワークフローに外部TTSサービスを任意追加しました。利用可能な声を名前から選び、提供元サンプルを試聴するか、Voice IDを入力できます。サンプルは別の言語の場合があるため、日本語の発音は生成音声で確認してください。
 
-The reading review now includes a private user dictionary for word-to-hiragana corrections. Add, edit or delete entries in the review dialog; new conversions reuse them across sentences. An entry updates a current suggestion only if that row has not been manually edited. Dictionary files stay outside the workflow and ZIP. / 読み確認に非公開の単語→ひらがな辞書を追加しました。確認窓で登録・編集・削除でき、別の文の変換にも再利用します。開いている確認窓では、手修正していない行だけ候補を更新します。辞書ファイルはワークフローやZIPに含めません。
+The API key is entered in the dialog and kept only in the running application process. Approved text is sent after the reading review. Cloud generation may consume the provider's credits. / APIキーは入力画面から登録し、動作中のアプリケーションのメモリ内だけに保持します。読み確認で承認した台詞だけを送信します。クラウド生成では提供元の利用枠を消費する場合があります。
 
-The live ComfyUI dialog and the saved workflow were checked with a female Gemini studio voice and a custom tone; regression tests cover the former mismatch, gender switching and ambiguous instructions. Audio quality was not reassessed for this UI fix. / Geminiの女性公式ボイスと自由入力の口調で、ComfyUIの実画面とワークフロー保存を確認しました。旧来の食い違い、性別切替、曖昧な指示を回帰テストで確認しています。この画面修正で音声の聴感品質は再評価していません。
-
-The sentence-edit button in the first node now has vertically centered text, removing the excess-looking space above its label. / 最初のノードの「台詞を1文ずつ編集」ボタンは文字を縦中央に配置し、上側の空きが目立たないようにしました。
-
-After sending an AI consultation, the dialog closes and progress remains visible. The proposal or error reopens the dialog. With an adopted voice, consultation defaults to proposing only the script and hides voice options; users can still request a new voice. The example selector fills the request field. / AI相談を送信すると窓を閉じ、経過表示を残します。提案またはエラー時に窓が戻ります。声を採用済みなら相談は台詞だけを初期選択とし、声の候補を隠します。依頼文の例は下欄へ入力され、必要なら声も再提案できます。
-
-The local LLM output cap for script proposals now follows the requested number of sentences, so a one-sentence request does not carry the previous 4096-token cap. / 台詞提案のローカルLLM出力上限を文数に合わせ、1文の依頼で従来の4096トークン上限を使わないようにしました。
+Gemini and local narration behavior are retained. The new workflow guide explains the optional provider and key handling. / 既存のクラウド音声とローカル音声の使い方は維持しています。新しいワークフロー説明に外部サービスとキー管理の案内を追加しました。
