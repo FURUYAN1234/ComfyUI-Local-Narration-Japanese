@@ -31,10 +31,13 @@ assert.equal(node.panel.children[0].children.filter(x=>x.tag==='button').length,
 assert.equal(field(node.panel,'Script / 台詞を直接編集').style.minHeight,'240px');
 assert.equal(widgets.find(w=>w.name==='narration_editor').computeSize()[1],930);
 (async()=>{
+ await new Promise(setImmediate);
+ assert(find(node.panel,'⚠️ ElevenLabs APIキー未設定 / 入力'));
  find(node.panel,'Voice settings / 声を確認・調整').onclick();
  const dialog=body.children.at(-1),engine=field(dialog,'Model / 音声モデル');
  engine.value='ElevenLabs';const choosing=engine.onchange();await new Promise(setImmediate);
  const keyDialog=body.children.at(-1);assert.notEqual(keyDialog,dialog);
+ assert(find(keyDialog,'⚠️ APIキーは未設定です。'));
  field(keyDialog,'ElevenLabs API key / APIキー').value='test-secret';await find(keyDialog,'Save / キーを設定').onclick();await choosing;
  const list=field(dialog,'ElevenLabs voice / 声を選択');
  assert.equal(list.children[0].textContent,'Japanese Voice · e00001');
@@ -44,6 +47,7 @@ assert.equal(widgets.find(w=>w.name==='narration_editor').computeSize()[1],930);
  assert.equal(find(dialog,'ElevenLabs提供の試聴です。英語の場合もあります。日本語の発音は生成した音声で確認してください。').hidden,false);
  list.value='voice00002';list.onchange();
  await find(dialog,'Apply voice / この声の設定を採用').onclick();
+ assert(find(node.panel,'✅ ElevenLabs APIキー設定済み / 再入力'));
  const get=n=>widgets.find(w=>w.name===n).value;
  assert.equal(get('engine'),'ElevenLabs');assert.equal(get('voice_mode'),'ElevenLabsの声');assert.equal(get('elevenlabs_voice_id'),'voice00002');
  assert(!JSON.stringify(values).includes('test-secret'));

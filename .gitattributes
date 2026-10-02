@@ -4,3 +4,4 @@ custom_nodes/** -text
 **/LICENSE* -text
 **/requirements*.txt -text
 *.png -text
+*.jpg -text

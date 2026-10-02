@@ -103,7 +103,7 @@ function showElevenLabsCredentialDialog(){
   catch(error){status.textContent='エラー：'+error.message;save.disabled=false;}
  });
  d.addEventListener('cancel',event=>{event.preventDefault();finish(false);});
- elevenlabsCredentialStatus().then(configured=>{if(!done){status.textContent=configured?'このセッションにキーが設定されています。':'キーは未設定です。';remove.hidden=!configured;}}).catch(error=>{if(!done)status.textContent='状態確認エラー：'+error.message;});
+ elevenlabsCredentialStatus().then(configured=>{if(!done){status.textContent=configured?'✅ このセッションにキーが設定されています。':'⚠️ APIキーは未設定です。';remove.hidden=!configured;}}).catch(error=>{if(!done)status.textContent='状態確認エラー：'+error.message;});
  queueMicrotask(()=>key.focus());return result;
 }
 async function ensureElevenLabsCredential(){try{if(await elevenlabsCredentialStatus())return true;}catch{}return await showElevenLabsCredentialDialog();}
@@ -192,7 +192,8 @@ export function installDirectionEditor(node){
   geminiKey.hidden=false;geminiKey.textContent=geminiConfigured?'✅ Gemini API 登録済み / 再入力':'⚠️ Gemini APIキーを入力';
   geminiKey.title='Gemini 3.8 Flash TTS / Flash-Lite TTS 共通のAPIキーを登録・再入力';
   style(geminiKey,{display:'block',width:'100%',minHeight:'38px',margin:'0',background:geminiConfigured?'#14532d':'#7c5d00',color:'#fff'});
-  elevenKey.textContent=elevenConfigured?'ElevenLabs APIキー設定済み / 再入力':'ElevenLabs APIキーを入力';
+  elevenKey.textContent=elevenConfigured?'✅ ElevenLabs APIキー設定済み / 再入力':'⚠️ ElevenLabs APIキー未設定 / 入力';
+   elevenKey.title=elevenConfigured?'このComfyUIセッションに登録済みです。':'ElevenLabsを使う場合はAPIキーを登録してください。Irodori / Qwenだけを使う場合は不要です。';
   style(elevenKey,{display:'block',width:'100%',minHeight:'38px',margin:'0',background:elevenConfigured?'#14532d':'#7c5d00',color:'#fff'});
   status.textContent=!count?'実行不可：台詞を入力してください。':!ready()?'声の設定を確定してください。':'台詞と声を確認できたら「実行」へ。';
  }
