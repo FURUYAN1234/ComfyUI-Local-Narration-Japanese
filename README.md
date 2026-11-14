@@ -1,5 +1,10 @@
 # Local Japanese Narration / 日本語おまかせナレーション
 
+[![Download Japanese Local Narration ComfyUI workflow ZIP / ナレーションのZIPをダウンロード](docs/assets/local-narration-download-banner.png)](https://github.com/FURUYAN1234/ComfyUI-Local-Narration-Japanese/releases/download/v1.2.6/LocalNarration_v1.2.6.zip)
+
+**Workflow package / ワークフロー配布ZIP:** Download and extract this package, then follow the installation instructions and model requirements in this README. / この配布ZIPをダウンロードして展開し、このREADMEの導入手順と必要なモデル・環境を確認してください。
+
+
 **Source code is public and software use is free. Personal, business, internal and commissioned use, and free integration/provision require no application, prior contact or permission from FURU. Third-party and API terms remain separate. / ソースコード公開・利用無料。個人利用、業務、社内利用、受託制作、無料の組み込み・無料提供には、申請・事前連絡・FURUの許可は不要です。第三者とAPIの条件は別です。**
 
 ## Usage terms / 利用条件
